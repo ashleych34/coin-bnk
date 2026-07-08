@@ -1356,7 +1356,7 @@ function ParentPanel({ data, setData }) {
   );
 }
 
-export default function CoinBank() {
+function CoinBank() {
   const [data, setDataRaw] = useState(defaultData);
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState('Ryan');
@@ -1603,3 +1603,86 @@ export default function CoinBank() {
     </div>
   );
 }
+
+// --- Site-wide password gate ------------------------------------------
+// This is deliberately simple: it just keeps casual/accidental visitors
+// with the URL out. It is NOT real security — the password lives in this
+// public source file, so anyone determined to read the code can find it.
+// For real protection (blocking direct API access, not just the UI), the
+// next step up is Supabase Auth.
+const SITE_PASSWORD = 'YenFamily2026';
+const GATE_KEY = 'coinbank-site-unlocked';
+
+function SiteGate() {
+  const [unlocked, setUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem(GATE_KEY) === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [entry, setEntry] = useState('');
+  const [error, setError] = useState(false);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (entry === SITE_PASSWORD) {
+      try {
+        localStorage.setItem(GATE_KEY, 'true');
+      } catch (e) {
+        // localStorage unavailable (e.g. private browsing) — still unlock for this session
+      }
+      setUnlocked(true);
+    } else {
+      setError(true);
+      setEntry('');
+      setTimeout(() => setError(false), 900);
+    }
+  };
+
+  if (unlocked) return <CoinBank />;
+
+  return (
+    <div
+      className="min-h-screen w-full flex items-center justify-center px-4"
+      style={{ background: '#151C27' }}
+    >
+      <form onSubmit={submit} className="max-w-xs w-full text-center">
+        <Coins size={32} style={{ color: GOLD }} className="mx-auto mb-3" />
+        <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Fredoka', sans-serif", color: '#F1EFEA' }}>
+          The Coin Bank
+        </h1>
+        <p className="text-base mb-6" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+          Enter the family password to continue
+        </p>
+        <input
+          type="password"
+          value={entry}
+          onChange={(e) => setEntry(e.target.value)}
+          autoFocus
+          className="w-full mb-3 rounded-lg px-3 py-2.5 text-base outline-none text-center"
+          style={{
+            background: '#1F2836',
+            border: `1px solid ${error ? '#E85D75' : '#2A3444'}`,
+            color: '#D8DCE3',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        />
+        {error && (
+          <p className="text-sm mb-3" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
+            That's not it — try again.
+          </p>
+        )}
+        <button
+          type="submit"
+          className="w-full py-2.5 rounded-lg text-base font-semibold"
+          style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
+        >
+          Enter
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default SiteGate;
