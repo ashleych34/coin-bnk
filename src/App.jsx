@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, Check, Target, Trash2, Gift, Pencil, Download, Upload, ClipboardList, Send, ThumbsDown } from 'lucide-react';
+import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, Check, Target, Trash2, Gift, Pencil, Download, Upload, ClipboardList, Send, ThumbsDown, Palette } from 'lucide-react';
 import { storageAdapter } from './storageAdapter';
 
 const KIDS = ['Ryan', 'Emma'];
@@ -7,7 +7,114 @@ const ACCENTS = {
   Ryan: { c: '#3FA796', bg: 'rgba(63,167,150,0.14)', ring: 'rgba(63,167,150,0.45)' },
   Emma: { c: '#E85D75', bg: 'rgba(232,93,117,0.14)', ring: 'rgba(232,93,117,0.45)' },
 };
-const GOLD = '#E8B94A';
+const GOLD = 'var(--gold)';
+
+// --- Themes ---------------------------------------------------------------
+// Only the "chrome" (background/surface/border/text) and the gold accent
+// are themeable. Ryan's teal and Emma's coral stay fixed across all themes
+// so they remain reliable identity colors, and red/green stay fixed since
+// they're used as universal negative/positive indicators throughout the ledger.
+const THEMES = {
+  midnight: {
+    label: 'Midnight',
+    swatch: '#E8B94A',
+    bg: '#151C27',
+    surface: '#1F2836',
+    border: '#2A3444',
+    textMuted: '#8B94A3',
+    textDim: '#5B6373',
+    textPrimary: '#D8DCE3',
+    textBright: '#F1EFEA',
+    textOnGold: '#1B2430',
+    gold: '#E8B94A',
+    goldRgb: '232,185,74',
+  },
+  ocean: {
+    label: 'Ocean',
+    swatch: '#4FC3E8',
+    bg: '#0F1B2B',
+    surface: '#16263B',
+    border: '#223349',
+    textMuted: '#8FA3B8',
+    textDim: '#5C7086',
+    textPrimary: '#D7E4EE',
+    textBright: '#F0F6FA',
+    textOnGold: '#0B1D2B',
+    gold: '#4FC3E8',
+    goldRgb: '79,195,232',
+  },
+  sunset: {
+    label: 'Sunset',
+    swatch: '#F4A259',
+    bg: '#241A2E',
+    surface: '#2F2138',
+    border: '#453354',
+    textMuted: '#B8A3C4',
+    textDim: '#7A6688',
+    textPrimary: '#EDE1F0',
+    textBright: '#FBF3FB',
+    textOnGold: '#2A1520',
+    gold: '#F4A259',
+    goldRgb: '244,162,89',
+  },
+  forest: {
+    label: 'Forest',
+    swatch: '#6FCF97',
+    bg: '#131F1A',
+    surface: '#1B2A23',
+    border: '#274036',
+    textMuted: '#9BB3A8',
+    textDim: '#5F776C',
+    textPrimary: '#DCEBE3',
+    textBright: '#F2FAF6',
+    textOnGold: '#0F2018',
+    gold: '#6FCF97',
+    goldRgb: '111,207,151',
+  },
+  daylight: {
+    label: 'Daylight',
+    swatch: '#E8A93F',
+    bg: '#F5F3EE',
+    surface: '#FFFFFF',
+    border: '#E4E0D8',
+    textMuted: '#7A7466',
+    textDim: '#A39C8C',
+    textPrimary: '#3A362F',
+    textBright: '#1F1C17',
+    textOnGold: '#2A1E08',
+    gold: '#E8A93F',
+    goldRgb: '232,169,63',
+  },
+};
+const THEME_KEY = 'coinbank-theme';
+const DEFAULT_THEME = 'midnight';
+
+function getStoredTheme() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return THEMES[t] ? t : DEFAULT_THEME;
+  } catch (e) {
+    return DEFAULT_THEME;
+  }
+}
+
+function themeVars(themeName) {
+  const t = THEMES[themeName] || THEMES[DEFAULT_THEME];
+  return {
+    '--bg': t.bg,
+    '--surface': t.surface,
+    '--border': t.border,
+    '--text-muted': t.textMuted,
+    '--text-dim': t.textDim,
+    '--text-primary': t.textPrimary,
+    '--text-bright': t.textBright,
+    '--text-on-gold': t.textOnGold,
+    '--gold': t.gold,
+    '--gold-rgb': t.goldRgb,
+    background: t.bg,
+    minHeight: '100vh',
+  };
+}
 
 // --- Unique ID helper (Date.now() alone can collide within the same millisecond) ---
 let uidCounter = 0;
@@ -61,23 +168,23 @@ function fmtDate(ts) {
 function describeTx(t) {
   switch (t.type) {
     case 'bucket_create':
-      return { label: `Started goal: ${t.bucketName}`, amountLabel: '', color: '#8B94A3', Icon: Target };
+      return { label: `Started goal: ${t.bucketName}`, amountLabel: '', color: 'var(--text-muted)', Icon: Target };
     case 'bucket_deposit':
-      return { label: `Moved into ${t.bucketName}`, amountLabel: `${t.amount}`, color: '#8B94A3', Icon: Target };
+      return { label: `Moved into ${t.bucketName}`, amountLabel: `${t.amount}`, color: 'var(--text-muted)', Icon: Target };
     case 'bucket_withdraw':
-      return { label: `Took back from ${t.bucketName}`, amountLabel: `+${t.amount}`, color: '#8B94A3', Icon: Target };
+      return { label: `Took back from ${t.bucketName}`, amountLabel: `+${t.amount}`, color: 'var(--text-muted)', Icon: Target };
     case 'bucket_claim':
       return { label: `Reward approved: ${t.bucketName}`, amountLabel: `${t.amount} spent`, color: GOLD, Icon: Gift };
     case 'claim_request':
-      return { label: `Asked to claim: ${t.bucketName}`, amountLabel: '', color: '#8B94A3', Icon: Gift };
+      return { label: `Asked to claim: ${t.bucketName}`, amountLabel: '', color: 'var(--text-muted)', Icon: Gift };
     case 'claim_rejected':
       return { label: `Claim declined: ${t.bucketName}`, amountLabel: '', color: '#E85D75', Icon: ThumbsDown };
     case 'bucket_delete':
-      return { label: `Removed goal: ${t.bucketName}`, amountLabel: t.amount > 0 ? `+${t.amount}` : '', color: '#8B94A3', Icon: Trash2 };
+      return { label: `Removed goal: ${t.bucketName}`, amountLabel: t.amount > 0 ? `+${t.amount}` : '', color: 'var(--text-muted)', Icon: Trash2 };
     case 'bucket_edit':
-      return { label: `Changed ${t.bucketName} goal to ${t.newTarget}`, amountLabel: '', color: '#8B94A3', Icon: Pencil };
+      return { label: `Changed ${t.bucketName} goal to ${t.newTarget}`, amountLabel: '', color: 'var(--text-muted)', Icon: Pencil };
     case 'task_request':
-      return { label: `Requested: ${t.reason}`, amountLabel: '', color: '#8B94A3', Icon: Send };
+      return { label: `Requested: ${t.reason}`, amountLabel: '', color: 'var(--text-muted)', Icon: Send };
     case 'task_approved':
       return { label: `Approved: ${t.reason}`, amountLabel: `+${t.amount}`, color: '#3FA796', Icon: Check };
     case 'task_rejected':
@@ -95,7 +202,7 @@ function describeTx(t) {
 function CoinStack({ count, accent }) {
   if (count <= 0) {
     return (
-      <div className="text-lg text-center" style={{ color: count < 0 ? '#E85D75' : '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+      <div className="text-lg text-center" style={{ color: count < 0 ? '#E85D75' : 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
         {count < 0 ? `Owes ${Math.abs(count)} coins` : 'No coins yet'}
       </div>
     );
@@ -162,22 +269,22 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
   };
 
   return (
-    <div className="rounded-lg p-3 mb-2" style={{ background: '#1F2836', border: '1px solid #2A3444' }}>
+    <div className="rounded-lg p-3 mb-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <Target size={19} style={{ color: accent.c, flexShrink: 0 }} />
-          <span className="text-xl font-medium truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+          <span className="text-xl font-medium truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
             {bucket.name}
           </span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-lg tabular-nums" style={{ color: '#8B94A3', fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-lg tabular-nums" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
             {bucket.saved}/{bucket.target}
           </span>
-          <button onClick={() => { setEditing((e) => !e); setEditTarget(String(bucket.target)); }} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+          <button onClick={() => { setEditing((e) => !e); setEditTarget(String(bucket.target)); }} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <Pencil size={18} />
           </button>
-          <button onClick={() => onDelete(bucket.id)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+          <button onClick={() => onDelete(bucket.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <Trash2 size={18} />
           </button>
         </div>
@@ -192,18 +299,18 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
             onChange={(e) => setEditTarget(e.target.value)}
             placeholder="New goal amount"
             className="flex-1 min-w-0 rounded-md px-2.5 py-1.5 text-lg outline-none"
-            style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
           />
           <button onClick={saveTarget} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}` }}>
             Save
           </button>
-          <button onClick={() => setEditing(false)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+          <button onClick={() => setEditing(false)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <X size={19} />
           </button>
         </div>
       )}
 
-      <div className="h-2 rounded-full overflow-hidden mb-2" style={{ background: '#151C27' }}>
+      <div className="h-2 rounded-full overflow-hidden mb-2" style={{ background: 'var(--bg)' }}>
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${pct}%`, background: reached ? GOLD : accent.c }}
@@ -223,7 +330,7 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
         <button
           onClick={() => onClaim(bucket.id)}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md text-lg font-semibold mb-2"
-          style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
+          style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}
         >
           <Gift size={18} /> Goal reached — ask to claim!
         </button>
@@ -239,17 +346,17 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
             onChange={(e) => setAmt(e.target.value)}
             placeholder="Coins"
             className="flex-1 min-w-0 rounded-md px-2.5 py-1.5 text-lg outline-none"
-            style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
           />
           <button onClick={deposit} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}` }}>
             Add
           </button>
           {bucket.saved > 0 && (
-            <button onClick={withdraw} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+            <button onClick={withdraw} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               Take out
             </button>
           )}
-          <button onClick={() => setOpen(false)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+          <button onClick={() => setOpen(false)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <X size={19} />
           </button>
         </div>
@@ -291,16 +398,16 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
           Savings goals
         </h3>
-        <span className="text-lg tabular-nums" style={{ color: '#5B6373', fontFamily: "'JetBrains Mono', monospace" }}>
+        <span className="text-lg tabular-nums" style={{ color: 'var(--text-dim)', fontFamily: "'JetBrains Mono', monospace" }}>
           {balance} unallocated
         </span>
       </div>
 
       {buckets.length === 0 && !creating && (
-        <div className="text-xl px-1 mb-3" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-xl px-1 mb-3" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
           No goals yet. Saving up for something? Start a bucket for it.
         </div>
       )}
@@ -335,14 +442,14 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
       )}
 
       {creating ? (
-        <div className="rounded-lg p-3" style={{ background: '#1F2836', border: `1px solid ${accent.ring}` }}>
+        <div className="rounded-lg p-3" style={{ background: 'var(--surface)', border: `1px solid ${accent.ring}` }}>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Goal name (e.g. Lego set)"
             className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-            style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
           />
           <input
             type="number"
@@ -351,13 +458,13 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
             onChange={(e) => setTarget(e.target.value)}
             placeholder="Coins needed (e.g. 160)"
             className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-            style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
           />
           <div className="flex gap-2">
-            <button onClick={create} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: accent.c, color: '#151C27', fontFamily: 'Inter, sans-serif' }}>
+            <button onClick={create} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: accent.c, color: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}>
               Create goal
             </button>
-            <button onClick={() => setCreating(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+            <button onClick={() => setCreating(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               Cancel
             </button>
           </div>
@@ -396,11 +503,11 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
 
   return (
     <div className="mt-6">
-      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
         Earn coins
       </h3>
       {myTasks.length === 0 ? (
-        <div className="text-xl px-1 mb-3" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-xl px-1 mb-3" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
           No tasks set up yet. Ask a parent to add some, or suggest your own below.
         </div>
       ) : (
@@ -411,22 +518,22 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
               <li
                 key={task.id}
                 className="flex items-center justify-between rounded-lg px-3 py-3"
-                style={{ background: '#1F2836', border: '1px solid #2A3444' }}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <ClipboardList size={20} style={{ color: accent.c, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {task.name}
                   </span>
                   <span
                     className="text-lg flex-shrink-0 px-2 py-0.5 rounded"
-                    style={{ background: 'rgba(232,185,74,0.14)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
+                    style={{ background: 'rgba(var(--gold-rgb), 0.14)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
                   >
                     {task.coins}
                   </span>
                 </div>
                 {pending ? (
-                  <span className="text-lg flex-shrink-0" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
                     Waiting for approval
                   </span>
                 ) : (
@@ -445,14 +552,14 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
       )}
 
       {customOpen ? (
-        <div className="rounded-lg p-3" style={{ background: '#1F2836', border: `1px solid ${accent.ring}` }}>
+        <div className="rounded-lg p-3" style={{ background: 'var(--surface)', border: `1px solid ${accent.ring}` }}>
           <input
             type="text"
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             placeholder="What did you do?"
             className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-            style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
           />
           <input
             type="number"
@@ -461,13 +568,13 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
             onChange={(e) => setCustomCoins(e.target.value)}
             placeholder="Coins you think it's worth"
             className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-            style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
           />
           <div className="flex gap-2">
-            <button onClick={submitCustom} className="flex-1 py-2 rounded-md text-lg font-semibold flex items-center justify-center gap-1" style={{ background: accent.c, color: '#151C27', fontFamily: 'Inter, sans-serif' }}>
+            <button onClick={submitCustom} className="flex-1 py-2 rounded-md text-lg font-semibold flex items-center justify-center gap-1" style={{ background: accent.c, color: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}>
               <Send size={17} /> Send request
             </button>
-            <button onClick={() => setCustomOpen(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+            <button onClick={() => setCustomOpen(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               Cancel
             </button>
           </div>
@@ -502,11 +609,11 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
         </div>
         <div
           className="text-8xl font-bold mt-2 mb-4 tabular-nums"
-          style={{ fontFamily: "'Fredoka', sans-serif", color: balance < 0 ? '#E85D75' : '#F1EFEA' }}
+          style={{ fontFamily: "'Fredoka', sans-serif", color: balance < 0 ? '#E85D75' : 'var(--text-bright)' }}
         >
           {balance}
         </div>
-        <div className="text-lg mb-4" style={{ color: balance < 0 ? '#E85D75' : '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-lg mb-4" style={{ color: balance < 0 ? '#E85D75' : 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
           {balance < 0 ? 'coins owed' : `${balance === 1 ? 'coin' : 'coins'} unallocated`}
         </div>
         <CoinStack count={balance} accent={accent} />
@@ -530,12 +637,12 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
       <div className="mt-6">
         <h3
           className="text-lg uppercase tracking-[0.2em] mb-3 px-1"
-          style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}
+          style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}
         >
           Recent activity
         </h3>
         {kidTx.length === 0 ? (
-          <div className="text-xl px-1" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+          <div className="text-xl px-1" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
             No entries yet. Ask a parent to add your first coins!
           </div>
         ) : (
@@ -546,11 +653,11 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
                 <li
                   key={t.id}
                   className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                  style={{ background: '#1F2836', border: '1px solid #2A3444' }}
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Icon size={21} style={{ color, flexShrink: 0 }} />
-                    <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                    <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                       {label}
                     </span>
                   </div>
@@ -563,7 +670,7 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
                         {amountLabel}
                       </span>
                     )}
-                    <span className="text-base" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+                    <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
                       {fmtDate(t.ts)}
                     </span>
                   </div>
@@ -610,7 +717,7 @@ function PinGate({ pin, onUnlock }) {
   return (
     <div className="max-w-xs mx-auto text-center pt-6">
       <Lock size={36} style={{ color: GOLD }} className="mx-auto mb-3" />
-      <div className="text-xl mb-5" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+      <div className="text-xl mb-5" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
         Enter parent PIN
       </div>
       <div className={`flex justify-center gap-3 mb-6 ${error ? 'animate-pulse' : ''}`}>
@@ -634,7 +741,7 @@ function PinGate({ pin, onUnlock }) {
               key={i}
               onClick={() => (d === '⌫' ? setEntry(entry.slice(0, -1)) : press(d))}
               className="rounded-xl py-3 text-2xl font-medium transition-colors"
-              style={{ background: '#1F2836', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+              style={{ background: 'var(--surface)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
             >
               {d}
             </button>
@@ -872,7 +979,7 @@ function ParentPanel({ data, setData }) {
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <span className="text-lg uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <span className="text-lg uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
           Parent control
         </span>
         <div className="flex items-center gap-2">
@@ -880,21 +987,21 @@ function ParentPanel({ data, setData }) {
           <button
             onClick={triggerImport}
             className="flex items-center gap-1 text-lg px-2.5 py-1.5 rounded-md"
-            style={{ color: '#8B94A3', border: '1px solid #2A3444', fontFamily: 'Inter, sans-serif' }}
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif' }}
           >
             <Upload size={17} /> Restore
           </button>
           <button
             onClick={exportData}
             className="flex items-center gap-1 text-lg px-2.5 py-1.5 rounded-md"
-            style={{ color: '#8B94A3', border: '1px solid #2A3444', fontFamily: 'Inter, sans-serif' }}
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif' }}
           >
             <Download size={17} /> Backup
           </button>
           <button
             onClick={() => setShowPinChange((s) => !s)}
             className="flex items-center gap-1 text-lg px-2.5 py-1.5 rounded-md"
-            style={{ color: '#8B94A3', border: '1px solid #2A3444', fontFamily: 'Inter, sans-serif' }}
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif' }}
           >
             <Settings size={17} /> PIN
           </button>
@@ -902,7 +1009,7 @@ function ParentPanel({ data, setData }) {
       </div>
 
       {showPinChange && (
-        <div className="mb-4 rounded-lg p-3 flex items-center gap-2" style={{ background: '#1F2836', border: '1px solid #2A3444' }}>
+        <div className="mb-4 rounded-lg p-3 flex items-center gap-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <input
             type="text"
             inputMode="numeric"
@@ -911,12 +1018,12 @@ function ParentPanel({ data, setData }) {
             onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
             placeholder="New 4-digit PIN"
             className="flex-1 bg-transparent outline-none text-xl"
-            style={{ color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
           />
-          <button onClick={savePin} className="text-lg px-2.5 py-1.5 rounded-md" style={{ background: GOLD, color: '#1B2430' }}>
+          <button onClick={savePin} className="text-lg px-2.5 py-1.5 rounded-md" style={{ background: GOLD, color: 'var(--text-on-gold)' }}>
             Save
           </button>
-          <button onClick={() => setShowPinChange(false)} className="text-lg px-1" className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+          <button onClick={() => setShowPinChange(false)} className="text-lg px-1" className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <X size={19} />
           </button>
         </div>
@@ -932,7 +1039,7 @@ function ParentPanel({ data, setData }) {
             <div className="text-lg uppercase tracking-[0.15em] mb-1" style={{ color: ACCENTS[kid].c, fontFamily: 'Inter, sans-serif' }}>
               {kid}
             </div>
-            <div className="text-5xl font-bold tabular-nums" style={{ fontFamily: "'Fredoka', sans-serif", color: data.balances[kid] < 0 ? '#E85D75' : '#F1EFEA' }}>
+            <div className="text-5xl font-bold tabular-nums" style={{ fontFamily: "'Fredoka', sans-serif", color: data.balances[kid] < 0 ? '#E85D75' : 'var(--text-bright)' }}>
               {data.balances[kid]}
             </div>
           </div>
@@ -949,7 +1056,7 @@ function ParentPanel({ data, setData }) {
               <li
                 key={req.id}
                 className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
-                style={{ background: 'rgba(232,185,74,0.1)', border: `1px solid ${GOLD}` }}
+                style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
@@ -958,11 +1065,11 @@ function ParentPanel({ data, setData }) {
                   >
                     {req.kid}
                   </span>
-                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {req.taskName}
                   </span>
                   {req.custom && (
-                    <span className="text-base flex-shrink-0 px-1 rounded" style={{ background: '#2A3444', color: '#8B94A3' }}>
+                    <span className="text-base flex-shrink-0 px-1 rounded" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}>
                       suggested
                     </span>
                   )}
@@ -974,7 +1081,7 @@ function ParentPanel({ data, setData }) {
                     value={getReqCoins(req)}
                     onChange={(e) => setReqCoins(req.id, e.target.value)}
                     className="w-16 text-center rounded-md py-1.5 text-lg outline-none"
-                    style={{ background: '#151C27', border: '1px solid #2A3444', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
                   />
                   <button onClick={() => approveRequest(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
                     <Check size={20} />
@@ -989,7 +1096,7 @@ function ParentPanel({ data, setData }) {
               <li
                 key={`claim-${bucket.id}`}
                 className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
-                style={{ background: 'rgba(232,185,74,0.1)', border: `1px solid ${GOLD}` }}
+                style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
@@ -999,7 +1106,7 @@ function ParentPanel({ data, setData }) {
                     {kid}
                   </span>
                   <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {bucket.name}
                   </span>
                   <span className="text-lg flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -1020,7 +1127,7 @@ function ParentPanel({ data, setData }) {
         </div>
       )}
 
-      <div className="rounded-xl p-4 mb-6" style={{ background: '#1F2836', border: '1px solid #2A3444' }}>
+      <div className="rounded-xl p-4 mb-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex gap-2 mb-3">
           {KIDS.map((kid) => (
             <button
@@ -1029,8 +1136,8 @@ function ParentPanel({ data, setData }) {
               className="flex-1 py-2.5 rounded-lg text-xl font-medium transition-colors"
               style={{
                 background: selKid === kid ? ACCENTS[kid].bg : 'transparent',
-                border: `1px solid ${selKid === kid ? ACCENTS[kid].ring : '#2A3444'}`,
-                color: selKid === kid ? ACCENTS[kid].c : '#8B94A3',
+                border: `1px solid ${selKid === kid ? ACCENTS[kid].ring : 'var(--border)'}`,
+                color: selKid === kid ? ACCENTS[kid].c : 'var(--text-muted)',
                 fontFamily: 'Inter, sans-serif',
               }}
             >
@@ -1045,8 +1152,8 @@ function ParentPanel({ data, setData }) {
             className="flex-1 py-2.5 rounded-lg text-xl font-medium flex items-center justify-center gap-1"
             style={{
               background: mode === 'add' ? 'rgba(63,167,150,0.18)' : 'transparent',
-              border: `1px solid ${mode === 'add' ? '#3FA796' : '#2A3444'}`,
-              color: mode === 'add' ? '#3FA796' : '#8B94A3',
+              border: `1px solid ${mode === 'add' ? '#3FA796' : 'var(--border)'}`,
+              color: mode === 'add' ? '#3FA796' : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
             }}
           >
@@ -1057,8 +1164,8 @@ function ParentPanel({ data, setData }) {
             className="flex-1 py-2.5 rounded-lg text-xl font-medium flex items-center justify-center gap-1"
             style={{
               background: mode === 'deduct' ? 'rgba(232,93,117,0.18)' : 'transparent',
-              border: `1px solid ${mode === 'deduct' ? '#E85D75' : '#2A3444'}`,
-              color: mode === 'deduct' ? '#E85D75' : '#8B94A3',
+              border: `1px solid ${mode === 'deduct' ? '#E85D75' : 'var(--border)'}`,
+              color: mode === 'deduct' ? '#E85D75' : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
             }}
           >
@@ -1073,7 +1180,7 @@ function ParentPanel({ data, setData }) {
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount"
           className="w-full mb-2 rounded-lg px-3 py-2.5 text-xl outline-none"
-          style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+          style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
         />
         <input
           type="text"
@@ -1081,13 +1188,13 @@ function ParentPanel({ data, setData }) {
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason (e.g. Practiced piano)"
           className="w-full mb-3 rounded-lg px-3 py-2.5 text-xl outline-none"
-          style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
+          style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
         />
         <button
           onClick={applyTransaction}
           disabled={!amount || parseInt(amount, 10) <= 0}
           className="w-full py-2.5 rounded-lg text-xl font-semibold disabled:opacity-40"
-          style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
+          style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}
         >
           {mode === 'add' ? 'Add coins' : 'Deduct coins'}
         </button>
@@ -1095,23 +1202,23 @@ function ParentPanel({ data, setData }) {
 
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3 px-1">
-          <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+          <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
             Task catalog
           </h3>
         </div>
         <ul className="space-y-2 mb-2">
           {data.taskCatalog.map((task) => {
             const assignedLabel = task.kids && task.kids.length === 1 ? `${task.kids[0]} only` : 'Both';
-            const assignedColor = task.kids && task.kids.length === 1 ? ACCENTS[task.kids[0]] : { bg: '#2A3444', c: '#8B94A3' };
+            const assignedColor = task.kids && task.kids.length === 1 ? ACCENTS[task.kids[0]] : { bg: 'var(--border)', c: 'var(--text-muted)' };
             return (
               <li key={task.id}>
                 <div
                   className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                  style={{ background: '#1F2836', border: '1px solid #2A3444' }}
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <ClipboardList size={19} style={{ color: '#8B94A3', flexShrink: 0 }} />
-                    <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                    <ClipboardList size={19} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                       {task.name}
                     </span>
                     <span className="text-lg flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -1122,23 +1229,23 @@ function ParentPanel({ data, setData }) {
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={() => startEditTask(task)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+                    <button onClick={() => startEditTask(task)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
                       <Pencil size={18} />
                     </button>
-                    <button onClick={() => deleteTask(task.id)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+                    <button onClick={() => deleteTask(task.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
                       <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
                 {editingTaskId === task.id && (
-                  <div className="mt-1.5 rounded-lg p-3" style={{ background: '#1F2836', border: `1px solid ${GOLD}` }}>
+                  <div className="mt-1.5 rounded-lg p-3" style={{ background: 'var(--surface)', border: `1px solid ${GOLD}` }}>
                     <input
                       type="text"
                       value={editTaskName}
                       onChange={(e) => setEditTaskName(e.target.value)}
                       placeholder="Task name"
                       className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-                      style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
                     />
                     <input
                       type="number"
@@ -1147,7 +1254,7 @@ function ParentPanel({ data, setData }) {
                       onChange={(e) => setEditTaskCoins(e.target.value)}
                       placeholder="Coins"
                       className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-                      style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
                     />
                     <div className="flex gap-2 mb-2">
                       {KIDS.map((kid) => (
@@ -1157,8 +1264,8 @@ function ParentPanel({ data, setData }) {
                           className="flex-1 py-2 rounded-md text-lg"
                           style={{
                             background: editTaskKids.includes(kid) ? ACCENTS[kid].bg : 'transparent',
-                            border: `1px solid ${editTaskKids.includes(kid) ? ACCENTS[kid].ring : '#2A3444'}`,
-                            color: editTaskKids.includes(kid) ? ACCENTS[kid].c : '#8B94A3',
+                            border: `1px solid ${editTaskKids.includes(kid) ? ACCENTS[kid].ring : 'var(--border)'}`,
+                            color: editTaskKids.includes(kid) ? ACCENTS[kid].c : 'var(--text-muted)',
                             fontFamily: 'Inter, sans-serif',
                           }}
                         >
@@ -1166,14 +1273,14 @@ function ParentPanel({ data, setData }) {
                         </button>
                       ))}
                     </div>
-                    <div className="text-base mb-2" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+                    <div className="text-base mb-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
                       Leave both unselected to make it available to everyone.
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => saveEditTask(task.id)} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
+                      <button onClick={() => saveEditTask(task.id)} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}>
                         Save changes
                       </button>
-                      <button onClick={() => setEditingTaskId(null)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+                      <button onClick={() => setEditingTaskId(null)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
                         Cancel
                       </button>
                     </div>
@@ -1185,14 +1292,14 @@ function ParentPanel({ data, setData }) {
         </ul>
 
         {addingTask ? (
-          <div className="rounded-lg p-3" style={{ background: '#1F2836', border: '1px solid #2A3444' }}>
+          <div className="rounded-lg p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <input
               type="text"
               value={newTaskName}
               onChange={(e) => setNewTaskName(e.target.value)}
               placeholder="Task name (e.g. Practice violin)"
               className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-              style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
             />
             <input
               type="number"
@@ -1201,7 +1308,7 @@ function ParentPanel({ data, setData }) {
               onChange={(e) => setNewTaskCoins(e.target.value)}
               placeholder="Coins earned"
               className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-              style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
             />
             <div className="flex gap-2 mb-2">
               {KIDS.map((kid) => (
@@ -1211,8 +1318,8 @@ function ParentPanel({ data, setData }) {
                   className="flex-1 py-2 rounded-md text-lg"
                   style={{
                     background: newTaskKids.includes(kid) ? ACCENTS[kid].bg : 'transparent',
-                    border: `1px solid ${newTaskKids.includes(kid) ? ACCENTS[kid].ring : '#2A3444'}`,
-                    color: newTaskKids.includes(kid) ? ACCENTS[kid].c : '#8B94A3',
+                    border: `1px solid ${newTaskKids.includes(kid) ? ACCENTS[kid].ring : 'var(--border)'}`,
+                    color: newTaskKids.includes(kid) ? ACCENTS[kid].c : 'var(--text-muted)',
                     fontFamily: 'Inter, sans-serif',
                   }}
                 >
@@ -1220,14 +1327,14 @@ function ParentPanel({ data, setData }) {
                 </button>
               ))}
             </div>
-            <div className="text-base mb-2" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+            <div className="text-base mb-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
               Leave both unselected to make it available to everyone.
             </div>
             <div className="flex gap-2">
-              <button onClick={addTask} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
+              <button onClick={addTask} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}>
                 Add task
               </button>
-              <button onClick={() => setAddingTask(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+              <button onClick={() => setAddingTask(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
                 Cancel
               </button>
             </div>
@@ -1236,7 +1343,7 @@ function ParentPanel({ data, setData }) {
           <button
             onClick={() => setAddingTask(true)}
             className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xl"
-            style={{ color: '#8B94A3', border: '1px dashed #2A3444', fontFamily: 'Inter, sans-serif' }}
+            style={{ color: 'var(--text-muted)', border: '1px dashed var(--border)', fontFamily: 'Inter, sans-serif' }}
           >
             <Plus size={19} /> New task
           </button>
@@ -1244,7 +1351,7 @@ function ParentPanel({ data, setData }) {
       </div>
 
       <div className="mb-6">
-        <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
           Reward catalog
         </h3>
         <ul className="space-y-2 mb-2">
@@ -1252,18 +1359,18 @@ function ParentPanel({ data, setData }) {
             <li
               key={r.id}
               className="flex items-center justify-between rounded-lg px-3 py-2.5"
-              style={{ background: '#1F2836', border: '1px solid #2A3444' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
-                <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                   {r.name}
                 </span>
-                <span className="text-lg flex-shrink-0" style={{ color: '#8B94A3', fontFamily: "'JetBrains Mono', monospace" }}>
+                <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
                   {r.target} coins
                 </span>
               </div>
-              <button onClick={() => deleteReward(r.id)} style={{ color: '#5B6373', flexShrink: 0 }}>
+              <button onClick={() => deleteReward(r.id)} style={{ color: 'var(--text-dim)', flexShrink: 0 }}>
                 <Trash2 size={18} />
               </button>
             </li>
@@ -1271,14 +1378,14 @@ function ParentPanel({ data, setData }) {
         </ul>
 
         {addingReward ? (
-          <div className="rounded-lg p-3" style={{ background: '#1F2836', border: '1px solid #2A3444' }}>
+          <div className="rounded-lg p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <input
               type="text"
               value={newRewardName}
               onChange={(e) => setNewRewardName(e.target.value)}
               placeholder="Reward name (e.g. Nerf gun)"
               className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-              style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
             />
             <input
               type="number"
@@ -1287,13 +1394,13 @@ function ParentPanel({ data, setData }) {
               onChange={(e) => setNewRewardTarget(e.target.value)}
               placeholder="Coins needed"
               className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
-              style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
             />
             <div className="flex gap-2">
-              <button onClick={addReward} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
+              <button onClick={addReward} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}>
                 Add reward
               </button>
-              <button onClick={() => setAddingReward(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+              <button onClick={() => setAddingReward(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
                 Cancel
               </button>
             </div>
@@ -1302,18 +1409,18 @@ function ParentPanel({ data, setData }) {
           <button
             onClick={() => setAddingReward(true)}
             className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xl"
-            style={{ color: '#8B94A3', border: '1px dashed #2A3444', fontFamily: 'Inter, sans-serif' }}
+            style={{ color: 'var(--text-muted)', border: '1px dashed var(--border)', fontFamily: 'Inter, sans-serif' }}
           >
             <Plus size={19} /> New reward
           </button>
         )}
       </div>
 
-      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
         Full ledger
       </h3>
       {data.transactions.length === 0 ? (
-        <div className="text-xl px-1" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-xl px-1" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
           No transactions yet.
         </div>
       ) : (
@@ -1324,7 +1431,7 @@ function ParentPanel({ data, setData }) {
               <li
                 key={t.id}
                 className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                style={{ background: '#1F2836', border: '1px solid #2A3444' }}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
@@ -1334,7 +1441,7 @@ function ParentPanel({ data, setData }) {
                     {t.kid}
                   </span>
                   <Icon size={19} style={{ color, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {label}
                   </span>
                 </div>
@@ -1347,7 +1454,7 @@ function ParentPanel({ data, setData }) {
                       {amountLabel}
                     </span>
                   )}
-                  <span className="text-base" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
                     {fmtDate(t.ts)}
                   </span>
                 </div>
@@ -1360,8 +1467,66 @@ function ParentPanel({ data, setData }) {
   );
 }
 
+function ThemePicker({ themeName, onChange }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="p-2 rounded-lg"
+        style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+      >
+        <Palette size={18} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 top-full mt-2 z-20 rounded-xl p-2 flex flex-col gap-1"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: '160px' }}
+          >
+            {Object.entries(THEMES).map(([key, t]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  onChange(key);
+                  setOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2 py-2 text-lg"
+                style={{
+                  background: themeName === key ? 'var(--bg)' : 'transparent',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <span
+                  className="rounded-full flex-shrink-0"
+                  style={{ width: 18, height: 18, background: t.swatch, border: '1px solid rgba(0,0,0,0.2)' }}
+                />
+                {t.label}
+                {themeName === key && <Check size={16} style={{ color: t.swatch, marginLeft: 'auto' }} />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function CoinBank() {
   const [data, setDataRaw] = useState(defaultData);
+  const [themeName, setThemeName] = useState(getStoredTheme);
+
+  const changeTheme = (name) => {
+    setThemeName(name);
+    try {
+      localStorage.setItem(THEME_KEY, name);
+    } catch (e) {
+      // ignore — theme just won't persist this session
+    }
+  };
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState('Ryan');
   const [syncError, setSyncError] = useState(null);
@@ -1538,18 +1703,23 @@ function CoinBank() {
   return (
     <div
       className="min-h-screen w-full py-8 px-4"
-      style={{ background: '#151C27' }}
+      style={themeVars(themeName)}
     >
-      <div className="max-w-lg mx-auto mb-8 text-center">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <Coins size={28} style={{ color: GOLD }} />
-          <h1 className="text-4xl font-bold" style={{ fontFamily: "'Fredoka', sans-serif", color: '#F1EFEA' }}>
-            The Coin Bank
-          </h1>
+      <div className="max-w-lg mx-auto mb-8 relative">
+        <div className="absolute right-0 top-0">
+          <ThemePicker themeName={themeName} onChange={changeTheme} />
         </div>
-        <p className="text-lg" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
-          A little passbook for big savers
-        </p>
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Coins size={28} style={{ color: GOLD }} />
+            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Fredoka', sans-serif", color: 'var(--text-bright)' }}>
+              The Coin Bank
+            </h1>
+          </div>
+          <p className="text-lg" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+            A little passbook for big savers
+          </p>
+        </div>
       </div>
 
       {syncError && (
@@ -1574,9 +1744,9 @@ function CoinBank() {
             onClick={() => setTab(t)}
             className="flex-1 py-3 rounded-xl text-xl font-medium transition-colors flex items-center justify-center gap-1.5 relative"
             style={{
-              background: tab === t ? (t === 'Parent' ? 'rgba(232,185,74,0.14)' : ACCENTS[t]?.bg) : '#1F2836',
-              border: `1px solid ${tab === t ? (t === 'Parent' ? GOLD : ACCENTS[t]?.ring) : '#2A3444'}`,
-              color: tab === t ? (t === 'Parent' ? GOLD : ACCENTS[t]?.c) : '#8B94A3',
+              background: tab === t ? (t === 'Parent' ? 'rgba(var(--gold-rgb), 0.14)' : ACCENTS[t]?.bg) : 'var(--surface)',
+              border: `1px solid ${tab === t ? (t === 'Parent' ? GOLD : ACCENTS[t]?.ring) : 'var(--border)'}`,
+              color: tab === t ? (t === 'Parent' ? GOLD : ACCENTS[t]?.c) : 'var(--text-muted)',
               fontFamily: 'Inter, sans-serif',
             }}
           >
@@ -1596,7 +1766,7 @@ function CoinBank() {
       </div>
 
       {!loaded ? (
-        <div className="text-center text-xl" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-center text-xl" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
           Loading passbook…
         </div>
       ) : tab === 'Parent' ? (
@@ -1643,6 +1813,7 @@ function SiteGate() {
   });
   const [entry, setEntry] = useState('');
   const [error, setError] = useState(false);
+  const [themeName] = useState(getStoredTheme);
 
   const submit = (e) => {
     e.preventDefault();
@@ -1665,14 +1836,14 @@ function SiteGate() {
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center px-4"
-      style={{ background: '#151C27' }}
+      style={themeVars(themeName)}
     >
       <form onSubmit={submit} className="max-w-xs w-full text-center">
         <Coins size={36} style={{ color: GOLD }} className="mx-auto mb-3" />
-        <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Fredoka', sans-serif", color: '#F1EFEA' }}>
+        <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Fredoka', sans-serif", color: 'var(--text-bright)' }}>
           The Coin Bank
         </h1>
-        <p className="text-xl mb-6" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <p className="text-xl mb-6" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
           Enter the family password to continue
         </p>
         <input
@@ -1682,9 +1853,9 @@ function SiteGate() {
           autoFocus
           className="w-full mb-3 rounded-lg px-3 py-3 text-xl outline-none text-center"
           style={{
-            background: '#1F2836',
-            border: `1px solid ${error ? '#E85D75' : '#2A3444'}`,
-            color: '#D8DCE3',
+            background: 'var(--surface)',
+            border: `1px solid ${error ? '#E85D75' : 'var(--border)'}`,
+            color: 'var(--text-primary)',
             fontFamily: 'Inter, sans-serif',
           }}
         />
@@ -1696,7 +1867,7 @@ function SiteGate() {
         <button
           type="submit"
           className="w-full py-3 rounded-lg text-xl font-semibold"
-          style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
+          style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}
         >
           Enter
         </button>
