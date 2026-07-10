@@ -1360,6 +1360,7 @@ function CoinBank() {
   const [data, setDataRaw] = useState(defaultData);
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState('Ryan');
+  const [syncError, setSyncError] = useState(null);
   // Tracks in-flight local writes so background refresh doesn't clobber them
   const pendingWrites = React.useRef(0);
 
@@ -1368,8 +1369,9 @@ function CoinBank() {
     try {
       const parsed = await storageAdapter.load();
       if (parsed) setDataRaw(withDefaults(parsed));
+      setSyncError(null);
     } catch (e) {
-      // network/storage hiccup — keep current state, try again next cycle
+      setSyncError('Could not load the latest data. Check your internet connection.');
     }
   }, []);
 
@@ -1397,7 +1399,10 @@ function CoinBank() {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       storageAdapter
         .save(next)
-        .catch(() => {})
+        .then(() => setSyncError(null))
+        .catch(() => {
+          setSyncError("Your last change didn't save. Check your internet connection and try again.");
+        })
         .finally(() => {
           pendingWrites.current = Math.max(0, pendingWrites.current - 1);
         });
@@ -1543,6 +1548,17 @@ function CoinBank() {
         </p>
       </div>
 
+      {syncError && (
+        <div className="max-w-lg mx-auto mb-6 rounded-lg px-4 py-3 flex items-start justify-between gap-3" style={{ background: 'rgba(232,93,117,0.12)', border: '1px solid #E85D75' }}>
+          <span className="text-sm" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
+            {syncError}
+          </span>
+          <button onClick={() => setSyncError(null)} style={{ color: '#E85D75', flexShrink: 0 }}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <div className="max-w-lg mx-auto flex gap-2 mb-8">
         {tabs.map((t) => {
           const pendingCount =
@@ -1610,7 +1626,7 @@ function CoinBank() {
 // public source file, so anyone determined to read the code can find it.
 // For real protection (blocking direct API access, not just the UI), the
 // next step up is Supabase Auth.
-const SITE_PASSWORD = 'YenFamily2026';
+const SITE_PASSWORD = 'ChenFamily2026';
 const GATE_KEY = 'coinbank-site-unlocked';
 
 function SiteGate() {
