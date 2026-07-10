@@ -210,24 +210,27 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
         />
       </div>
 
-      {reached ? (
-        bucket.claimPending ? (
-          <div
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm"
-            style={{ color: GOLD, border: `1px dashed ${GOLD}`, fontFamily: 'Inter, sans-serif' }}
-          >
-            <Gift size={15} /> Waiting for parent approval
-          </div>
-        ) : (
-          <button
-            onClick={() => onClaim(bucket.id)}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-semibold"
-            style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
-          >
-            <Gift size={15} /> Goal reached — ask to claim!
-          </button>
-        )
-      ) : open ? (
+      {reached && bucket.claimPending && (
+        <div
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm"
+          style={{ color: GOLD, border: `1px dashed ${GOLD}`, fontFamily: 'Inter, sans-serif' }}
+        >
+          <Gift size={15} /> Waiting for parent approval
+        </div>
+      )}
+
+      {reached && !bucket.claimPending && (
+        <button
+          onClick={() => onClaim(bucket.id)}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-semibold mb-2"
+          style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
+        >
+          <Gift size={15} /> Goal reached — ask to claim!
+        </button>
+      )}
+
+      {!bucket.claimPending && (
+        open ? (
         <div className="flex items-center gap-1.5">
           <input
             type="number"
@@ -258,6 +261,7 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
         >
           Move coins in / out
         </button>
+        )
       )}
     </div>
   );
