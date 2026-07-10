@@ -3,9 +3,11 @@ import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, 
 import { storageAdapter } from './storageAdapter';
 
 const KIDS = ['Ryan', 'Emma'];
+const TEST_KID = 'Test';
 const ACCENTS = {
   Ryan: { c: '#3FA796', bg: 'rgba(63,167,150,0.14)', ring: 'rgba(63,167,150,0.45)' },
   Emma: { c: '#E85D75', bg: 'rgba(232,93,117,0.14)', ring: 'rgba(232,93,117,0.45)' },
+  Test: { c: '#9B7EDE', bg: 'rgba(155,126,222,0.14)', ring: 'rgba(155,126,222,0.45)' },
 };
 const GOLD = 'var(--gold)';
 
@@ -133,9 +135,9 @@ function withDefaults(parsed) {
   return {
     ...defaultData,
     ...parsed,
-    balances: { Ryan: 0, Emma: 0, ...(parsed.balances || {}) },
-    debits: { Ryan: 0, Emma: 0, ...(parsed.debits || {}) },
-    buckets: { Ryan: [], Emma: [], ...(parsed.buckets || {}) },
+    balances: { Ryan: 0, Emma: 0, Test: 0, ...(parsed.balances || {}) },
+    debits: { Ryan: 0, Emma: 0, Test: 0, ...(parsed.debits || {}) },
+    buckets: { Ryan: [], Emma: [], Test: [], ...(parsed.buckets || {}) },
     transactions: parsed.transactions || [],
     rewardCatalog: parsed.rewardCatalog || defaultData.rewardCatalog,
     taskCatalog: parsed.taskCatalog || defaultData.taskCatalog,
@@ -146,9 +148,9 @@ function withDefaults(parsed) {
 
 const defaultData = {
   pin: '1234',
-  balances: { Ryan: 0, Emma: 0 },
-  debits: { Ryan: 0, Emma: 0 },
-  buckets: { Ryan: [], Emma: [] },
+  balances: { Ryan: 0, Emma: 0, Test: 0 },
+  debits: { Ryan: 0, Emma: 0, Test: 0 },
+  buckets: { Ryan: [], Emma: [], Test: [] },
   transactions: [],
   rewardCatalog: [
     { id: 'reward-seed-1', name: 'Lego set', target: 160 },
@@ -716,11 +718,38 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   );
 }
 
-function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt }) {
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
+  const isTest = kid === TEST_KID;
   return (
     <div className="max-w-md mx-auto">
+      {isTest && (
+        <div
+          className="flex items-center justify-between rounded-lg px-3 py-2.5 mb-4 gap-2"
+          style={{ background: accent.bg, border: `1px solid ${accent.ring}` }}
+        >
+          <span className="text-lg" style={{ color: accent.c, fontFamily: 'Inter, sans-serif' }}>
+            🧪 Test account — nothing here affects Ryan or Emma
+          </span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={onResetTest}
+              className="text-base px-2.5 py-1.5 rounded-md"
+              style={{ color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
+            >
+              Reset
+            </button>
+            <button
+              onClick={onBack}
+              className="text-base px-2.5 py-1.5 rounded-md"
+              style={{ color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
+            >
+              ← Parent
+            </button>
+          </div>
+        </div>
+      )}
       <div
         className="rounded-2xl p-6 border"
         style={{ background: accent.bg, borderColor: accent.ring }}
@@ -880,7 +909,7 @@ function PinGate({ pin, onUnlock }) {
   );
 }
 
-function ParentPanel({ data, setData }) {
+function ParentPanel({ data, setData, onOpenTest }) {
   const [unlocked, setUnlocked] = useState(false);
   const [selKid, setSelKid] = useState('Ryan');
   const [amount, setAmount] = useState('');
@@ -1205,6 +1234,14 @@ function ParentPanel({ data, setData }) {
           </button>
         </div>
       </div>
+
+      <button
+        onClick={onOpenTest}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-lg mb-6"
+        style={{ background: ACCENTS.Test.bg, color: ACCENTS.Test.c, border: `1px solid ${ACCENTS.Test.ring}`, fontFamily: 'Inter, sans-serif' }}
+      >
+        🧪 Open Test Account (safe to play with)
+      </button>
 
       {showPinChange && (
         <div className="mb-4 rounded-lg p-3 flex items-center gap-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -1998,6 +2035,18 @@ function CoinBank() {
     });
   }, [setData]);
 
+  const resetTestAccount = useCallback(() => {
+    setData((prev) => ({
+      ...prev,
+      balances: { ...prev.balances, [TEST_KID]: 0 },
+      debits: { ...prev.debits, [TEST_KID]: 0 },
+      buckets: { ...prev.buckets, [TEST_KID]: [] },
+      transactions: prev.transactions.filter((t) => t.kid !== TEST_KID),
+      taskRequests: prev.taskRequests.filter((r) => r.kid !== TEST_KID),
+      debtRequests: prev.debtRequests.filter((r) => r.kid !== TEST_KID),
+    }));
+  }, [setData]);
+
   const tabs = [...KIDS, 'Parent'];
 
   return (
@@ -2071,7 +2120,7 @@ function CoinBank() {
           Loading passbook…
         </div>
       ) : tab === 'Parent' ? (
-        <ParentPanel data={data} setData={setData} />
+        <ParentPanel data={data} setData={setData} onOpenTest={() => setTab(TEST_KID)} />
       ) : (
         <KidPassbook
           kid={tab}
@@ -2093,6 +2142,8 @@ function CoinBank() {
           debtRequests={data.debtRequests}
           onRequestAdvance={(rewardName, cost) => requestAdvance(tab, rewardName, cost)}
           onPayDownDebt={(amount) => payDownDebt(tab, amount)}
+          onBack={() => setTab('Parent')}
+          onResetTest={resetTestAccount}
         />
       )}
     </div>
