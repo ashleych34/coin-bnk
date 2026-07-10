@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, Check, Target, Trash2, Gift, Pencil, Download, Upload, ClipboardList, Send, ThumbsDown, Palette } from 'lucide-react';
+import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, Check, Target, Trash2, Gift, Pencil, Download, Upload, ClipboardList, Send, ThumbsDown, Palette, CreditCard } from 'lucide-react';
 import { storageAdapter } from './storageAdapter';
 
 const KIDS = ['Ryan', 'Emma'];
@@ -134,17 +134,20 @@ function withDefaults(parsed) {
     ...defaultData,
     ...parsed,
     balances: { Ryan: 0, Emma: 0, ...(parsed.balances || {}) },
+    debits: { Ryan: 0, Emma: 0, ...(parsed.debits || {}) },
     buckets: { Ryan: [], Emma: [], ...(parsed.buckets || {}) },
     transactions: parsed.transactions || [],
     rewardCatalog: parsed.rewardCatalog || defaultData.rewardCatalog,
     taskCatalog: parsed.taskCatalog || defaultData.taskCatalog,
     taskRequests: parsed.taskRequests || [],
+    debtRequests: parsed.debtRequests || [],
   };
 }
 
 const defaultData = {
   pin: '1234',
   balances: { Ryan: 0, Emma: 0 },
+  debits: { Ryan: 0, Emma: 0 },
   buckets: { Ryan: [], Emma: [] },
   transactions: [],
   rewardCatalog: [
@@ -157,6 +160,7 @@ const defaultData = {
     { id: 'task-seed-4', name: 'Practice viola', coins: 1, kids: [] },
   ],
   taskRequests: [],
+  debtRequests: [],
 };
 
 function fmtDate(ts) {
@@ -189,6 +193,14 @@ function describeTx(t) {
       return { label: `Approved: ${t.reason}`, amountLabel: `+${t.amount}`, color: '#3FA796', Icon: Check };
     case 'task_rejected':
       return { label: `Declined: ${t.reason}`, amountLabel: '', color: '#E85D75', Icon: ThumbsDown };
+    case 'debt_request':
+      return { label: `Asked to get now: ${t.reason}`, amountLabel: '', color: 'var(--text-muted)', Icon: CreditCard };
+    case 'debt_approved':
+      return { label: `Got now: ${t.reason}`, amountLabel: t.amount > 0 ? `${t.amount} owed` : 'no debt needed', color: t.amount > 0 ? '#E85D75' : '#3FA796', Icon: CreditCard };
+    case 'debt_rejected':
+      return { label: `Declined: ${t.reason}`, amountLabel: '', color: '#E85D75', Icon: ThumbsDown };
+    case 'debt_paydown':
+      return { label: 'Paid down debt', amountLabel: `-${t.amount}`, color: '#3FA796', Icon: CreditCard };
     default:
       return {
         label: t.reason || (t.amount >= 0 ? 'Coins added' : 'Coins deducted'),
@@ -374,7 +386,7 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
   );
 }
 
-function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, onClaim, onDelete, onEditTarget, rewardCatalog }) {
+function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, onClaim, onDelete, onEditTarget, rewardCatalog, debtRequests, onRequestAdvance }) {
   const accent = ACCENTS[kid];
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
@@ -395,6 +407,10 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
     setCreating(true);
   };
 
+  const pendingAdvanceNames = new Set(
+    (debtRequests || []).filter((r) => r.kid === kid && r.status === 'pending').map((r) => r.rewardName)
+  );
+
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3 px-1">
@@ -402,7 +418,7 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
           Savings goals
         </h3>
         <span className="text-lg tabular-nums" style={{ color: 'var(--text-dim)', fontFamily: "'JetBrains Mono', monospace" }}>
-          {balance} unallocated
+          {balance} credit
         </span>
       </div>
 
@@ -427,17 +443,58 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
       ))}
 
       {rewardCatalog && rewardCatalog.length > 0 && !creating && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {rewardCatalog.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => pickReward(r)}
-              className="text-lg px-3 py-2 rounded-full flex items-center gap-1"
-              style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
-            >
-              <Gift size={16} /> {r.name} · {r.target}
-            </button>
-          ))}
+        <div className="space-y-2 mb-3">
+          {rewardCatalog.map((r) => {
+            const pendingAdvance = pendingAdvanceNames.has(r.name);
+            const short = Math.max(0, r.target - balance);
+            return (
+              <div
+                key={r.id}
+                className="rounded-lg px-3 py-2.5"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Gift size={18} style={{ color: GOLD, flexShrink: 0 }} />
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                    {r.name}
+                  </span>
+                  <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {r.target}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => pickReward(r)}
+                    className="flex-1 text-base px-2 py-2 rounded-md flex items-center justify-center gap-1"
+                    style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    <Target size={15} /> Save toward this
+                  </button>
+                  {pendingAdvance ? (
+                    <span
+                      className="flex-1 text-base px-2 py-2 rounded-md flex items-center justify-center"
+                      style={{ color: 'var(--text-muted)', border: '1px dashed var(--border)', fontFamily: 'Inter, sans-serif' }}
+                    >
+                      Waiting for approval
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => onRequestAdvance(r.name, r.target)}
+                      className="flex-1 text-base px-2 py-2 rounded-md flex items-center justify-center gap-1"
+                      style={{ color: '#E85D75', border: '1px solid #E85D75', fontFamily: 'Inter, sans-serif' }}
+                    >
+                      <CreditCard size={15} /> Get it now
+                    </button>
+                  )}
+                </div>
+                {short > 0 && (
+                  <p className="text-base mt-1.5" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                    "Get it now" would add {short} to your debit.
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -592,7 +649,74 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
   );
 }
 
-function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog }) {
+function DebtCard({ kid, debit, balance, onPayDown }) {
+  const [open, setOpen] = useState(false);
+  const [amt, setAmt] = useState('');
+  const maxPayable = Math.min(balance, debit);
+
+  if (debit <= 0) return null;
+
+  const pay = () => {
+    const n = parseInt(amt, 10);
+    if (!n || n <= 0 || n > maxPayable) return;
+    onPayDown(n);
+    setAmt('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(232,93,117,0.1)', border: '1px solid #E85D75' }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <CreditCard size={19} style={{ color: '#E85D75' }} />
+          <span className="text-lg uppercase tracking-[0.15em]" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
+            Debit
+          </span>
+        </div>
+        <span className="text-2xl font-bold tabular-nums" style={{ color: '#E85D75', fontFamily: "'Fredoka', sans-serif" }}>
+          {debit}
+        </span>
+      </div>
+      <p className="text-lg mb-3" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+        You owe this many coins from getting a reward early.
+      </p>
+      {maxPayable <= 0 ? (
+        <p className="text-lg" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+          Earn some credit, then you can pay this down.
+        </p>
+      ) : open ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            min="1"
+            max={maxPayable}
+            value={amt}
+            onChange={(e) => setAmt(e.target.value)}
+            placeholder={`Up to ${maxPayable}`}
+            className="flex-1 min-w-0 rounded-md px-2 py-2 text-lg outline-none"
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
+          />
+          <button onClick={pay} className="text-lg px-3 py-2 rounded-md flex-shrink-0" style={{ background: '#E85D75', color: '#fff' }}>
+            Pay
+          </button>
+          <button onClick={() => setOpen(false)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+            <X size={18} />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full text-lg py-2 rounded-md"
+          style={{ color: '#E85D75', border: '1px solid #E85D75', fontFamily: 'Inter, sans-serif' }}
+        >
+          Pay down debt from credit ({maxPayable} available)
+        </button>
+      )}
+    </div>
+  );
+}
+
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   return (
@@ -614,10 +738,12 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
           {balance}
         </div>
         <div className="text-lg mb-4" style={{ color: balance < 0 ? '#E85D75' : 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
-          {balance < 0 ? 'coins owed' : `${balance === 1 ? 'coin' : 'coins'} unallocated`}
+          {balance < 0 ? 'coins owed' : `${balance === 1 ? 'coin' : 'coins'} credit`}
         </div>
         <CoinStack count={balance} accent={accent} />
       </div>
+
+      <DebtCard kid={kid} debit={debit} balance={balance} onPayDown={onPayDownDebt} />
 
       <TaskBoard kid={kid} taskCatalog={taskCatalog} taskRequests={taskRequests} onRequest={onRequestTask} onRequestCustom={onRequestCustomTask} />
 
@@ -632,6 +758,8 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
         onDelete={onDeleteBucket}
         onEditTarget={onEditBucket}
         rewardCatalog={rewardCatalog}
+        debtRequests={debtRequests}
+        onRequestAdvance={onRequestAdvance}
       />
 
       <div className="mt-6">
@@ -817,6 +945,41 @@ function ParentPanel({ data, setData }) {
     flashToast('Claim declined — coins stay in the goal');
   };
 
+  const pendingDebts = data.debtRequests.filter((r) => r.status === 'pending');
+
+  const approveDebt = (requestId) => {
+    setData((prev) => {
+      const req = prev.debtRequests.find((r) => r.id === requestId);
+      if (!req || req.status !== 'pending') return prev;
+      const currentCredit = prev.balances[req.kid];
+      const fromCredit = Math.min(req.cost, currentCredit);
+      const newDebit = req.cost - fromCredit;
+      const tx = { id: uid(), kid: req.kid, type: 'debt_approved', amount: newDebit, reason: req.rewardName, ts: Date.now() };
+      return {
+        ...prev,
+        balances: { ...prev.balances, [req.kid]: currentCredit - fromCredit },
+        debits: { ...prev.debits, [req.kid]: prev.debits[req.kid] + newDebit },
+        debtRequests: prev.debtRequests.map((r) => (r.id === requestId ? { ...r, status: 'approved' } : r)),
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+    flashToast('Advance approved');
+  };
+
+  const rejectDebt = (requestId) => {
+    setData((prev) => {
+      const req = prev.debtRequests.find((r) => r.id === requestId);
+      if (!req || req.status !== 'pending') return prev;
+      const tx = { id: uid(), kid: req.kid, type: 'debt_rejected', amount: 0, reason: req.rewardName, ts: Date.now() };
+      return {
+        ...prev,
+        debtRequests: prev.debtRequests.map((r) => (r.id === requestId ? { ...r, status: 'rejected' } : r)),
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+    flashToast('Advance declined');
+  };
+
   const approveRequest = (requestId) => {
     setData((prev) => {
       const req = prev.taskRequests.find((r) => r.id === requestId);
@@ -931,13 +1094,28 @@ function ParentPanel({ data, setData }) {
   const applyTransaction = () => {
     const amt = parseInt(amount, 10);
     if (!amt || amt <= 0) return;
-    const signed = mode === 'add' ? amt : -amt;
-    const tx = { id: uid(), kid: selKid, amount: signed, reason: reason.trim(), ts: Date.now() };
-    setData((prev) => ({
-      ...prev,
-      balances: { ...prev.balances, [selKid]: prev.balances[selKid] + signed },
-      transactions: [tx, ...prev.transactions],
-    }));
+    setData((prev) => {
+      if (mode === 'add') {
+        const tx = { id: uid(), kid: selKid, amount: amt, reason: reason.trim(), ts: Date.now() };
+        return {
+          ...prev,
+          balances: { ...prev.balances, [selKid]: prev.balances[selKid] + amt },
+          transactions: [tx, ...prev.transactions],
+        };
+      }
+      // Deduct: take from credit first; anything beyond what's available
+      // becomes debit instead of letting credit go negative.
+      const currentCredit = prev.balances[selKid];
+      const fromCredit = Math.min(amt, currentCredit);
+      const overflow = amt - fromCredit;
+      const tx = { id: uid(), kid: selKid, amount: -amt, reason: reason.trim(), ts: Date.now() };
+      return {
+        ...prev,
+        balances: { ...prev.balances, [selKid]: currentCredit - fromCredit },
+        debits: { ...prev.debits, [selKid]: prev.debits[selKid] + overflow },
+        transactions: [tx, ...prev.transactions],
+      };
+    });
     flashToast(`${mode === 'add' ? 'Added' : 'Deducted'} ${amt} coin${amt === 1 ? '' : 's'} for ${selKid}`);
     setAmount('');
     setReason('');
@@ -1043,7 +1221,7 @@ function ParentPanel({ data, setData }) {
           <button onClick={savePin} className="text-lg px-2.5 py-1.5 rounded-md" style={{ background: GOLD, color: 'var(--text-on-gold)' }}>
             Save
           </button>
-          <button onClick={() => setShowPinChange(false)} className="text-lg px-1" className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+          <button onClick={() => setShowPinChange(false)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <X size={19} />
           </button>
         </div>
@@ -1062,14 +1240,22 @@ function ParentPanel({ data, setData }) {
             <div className="text-5xl font-bold tabular-nums" style={{ fontFamily: "'Fredoka', sans-serif", color: data.balances[kid] < 0 ? '#E85D75' : 'var(--text-bright)' }}>
               {data.balances[kid]}
             </div>
+            <div className="text-base" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+              credit
+            </div>
+            {data.debits[kid] > 0 && (
+              <div className="text-2xl font-semibold tabular-nums mt-1" style={{ color: '#E85D75', fontFamily: "'Fredoka', sans-serif" }}>
+                −{data.debits[kid]} <span className="text-base font-normal" style={{ fontFamily: 'Inter, sans-serif' }}>debit</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {(pendingRequests.length > 0 || pendingClaims.length > 0) && (
+      {(pendingRequests.length > 0 || pendingClaims.length > 0 || pendingDebts.length > 0) && (
         <div className="mb-6">
           <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: GOLD, fontFamily: 'Inter, sans-serif' }}>
-            Pending requests ({pendingRequests.length + pendingClaims.length})
+            Pending requests ({pendingRequests.length + pendingClaims.length + pendingDebts.length})
           </h3>
           <ul className="space-y-2">
             {pendingRequests.map((req) => (
@@ -1138,6 +1324,37 @@ function ParentPanel({ data, setData }) {
                     <Check size={20} />
                   </button>
                   <button onClick={() => rejectClaim(kid, bucket.id)} className="p-2 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
+                    <X size={20} />
+                  </button>
+                </div>
+              </li>
+            ))}
+            {pendingDebts.map((req) => (
+              <li
+                key={`debt-${req.id}`}
+                className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
+                style={{ background: 'rgba(232,93,117,0.1)', border: '1px solid #E85D75' }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                    style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
+                  >
+                    {req.kid}
+                  </span>
+                  <CreditCard size={18} style={{ color: '#E85D75', flexShrink: 0 }} />
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                    {req.rewardName}
+                  </span>
+                  <span className="text-lg flex-shrink-0" style={{ color: '#E85D75', fontFamily: "'JetBrains Mono', monospace" }}>
+                    cost {req.cost}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={() => approveDebt(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
+                    <Check size={20} />
+                  </button>
+                  <button onClick={() => rejectDebt(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
                     <X size={20} />
                   </button>
                 </div>
@@ -1753,6 +1970,34 @@ function CoinBank() {
     });
   }, [setData]);
 
+  const requestAdvance = useCallback((kid, rewardName, cost) => {
+    setData((prev) => {
+      const alreadyPending = prev.debtRequests.some((r) => r.kid === kid && r.rewardName === rewardName && r.status === 'pending');
+      if (alreadyPending) return prev;
+      const request = { id: uid(), kid, rewardName, cost, status: 'pending', ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'debt_request', amount: 0, reason: `${rewardName} (${cost})`, ts: Date.now() };
+      return {
+        ...prev,
+        debtRequests: [request, ...prev.debtRequests],
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+  }, [setData]);
+
+  const payDownDebt = useCallback((kid, amount) => {
+    setData((prev) => {
+      const applied = Math.min(amount, prev.balances[kid], prev.debits[kid]);
+      if (applied <= 0) return prev;
+      const tx = { id: uid(), kid, type: 'debt_paydown', amount: applied, reason: '', ts: Date.now() };
+      return {
+        ...prev,
+        balances: { ...prev.balances, [kid]: prev.balances[kid] - applied },
+        debits: { ...prev.debits, [kid]: prev.debits[kid] - applied },
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+  }, [setData]);
+
   const tabs = [...KIDS, 'Parent'];
 
   return (
@@ -1792,7 +2037,8 @@ function CoinBank() {
         {tabs.map((t) => {
           const pendingCount =
             data.taskRequests.filter((r) => r.status === 'pending').length +
-            KIDS.reduce((sum, k) => sum + (data.buckets[k] || []).filter((b) => b.claimPending).length, 0);
+            KIDS.reduce((sum, k) => sum + (data.buckets[k] || []).filter((b) => b.claimPending).length, 0) +
+            data.debtRequests.filter((r) => r.status === 'pending').length;
           return (
           <button
             key={t}
@@ -1843,6 +2089,10 @@ function CoinBank() {
           onRequestTask={(taskId) => requestTask(tab, taskId)}
           onRequestCustomTask={(name, coins) => requestCustomTask(tab, name, coins)}
           rewardCatalog={data.rewardCatalog}
+          debit={data.debits[tab]}
+          debtRequests={data.debtRequests}
+          onRequestAdvance={(rewardName, cost) => requestAdvance(tab, rewardName, cost)}
+          onPayDownDebt={(amount) => payDownDebt(tab, amount)}
         />
       )}
     </div>
