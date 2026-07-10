@@ -95,7 +95,7 @@ function describeTx(t) {
 function CoinStack({ count, accent }) {
   if (count <= 0) {
     return (
-      <div className="text-sm text-center" style={{ color: count < 0 ? '#E85D75' : '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+      <div className="text-lg text-center" style={{ color: count < 0 ? '#E85D75' : '#5B6373', fontFamily: 'Inter, sans-serif' }}>
         {count < 0 ? `Owes ${Math.abs(count)} coins` : 'No coins yet'}
       </div>
     );
@@ -123,7 +123,7 @@ function CoinStack({ count, accent }) {
         );
       })}
       {count > 40 && (
-        <div className="text-xs tracking-wide mt-1" style={{ color: accent.c }}>
+        <div className="text-base tracking-wide mt-1" style={{ color: accent.c }}>
           +{count - 40} more
         </div>
       )}
@@ -165,20 +165,20 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
     <div className="rounded-lg p-3 mb-2" style={{ background: '#1F2836', border: '1px solid #2A3444' }}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Target size={16} style={{ color: accent.c, flexShrink: 0 }} />
-          <span className="text-base font-medium truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+          <Target size={19} style={{ color: accent.c, flexShrink: 0 }} />
+          <span className="text-xl font-medium truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
             {bucket.name}
           </span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-sm tabular-nums" style={{ color: '#8B94A3', fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-lg tabular-nums" style={{ color: '#8B94A3', fontFamily: "'JetBrains Mono', monospace" }}>
             {bucket.saved}/{bucket.target}
           </span>
-          <button onClick={() => { setEditing((e) => !e); setEditTarget(String(bucket.target)); }} style={{ color: '#5B6373' }}>
-            <Pencil size={15} />
+          <button onClick={() => { setEditing((e) => !e); setEditTarget(String(bucket.target)); }} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+            <Pencil size={18} />
           </button>
-          <button onClick={() => onDelete(bucket.id)} style={{ color: '#5B6373' }}>
-            <Trash2 size={15} />
+          <button onClick={() => onDelete(bucket.id)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
@@ -191,14 +191,14 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
             value={editTarget}
             onChange={(e) => setEditTarget(e.target.value)}
             placeholder="New goal amount"
-            className="flex-1 min-w-0 rounded-md px-2 py-1 text-sm outline-none"
+            className="flex-1 min-w-0 rounded-md px-2.5 py-1.5 text-lg outline-none"
             style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
           />
-          <button onClick={saveTarget} className="text-sm px-2 py-1 rounded-md flex-shrink-0" style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}` }}>
+          <button onClick={saveTarget} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}` }}>
             Save
           </button>
-          <button onClick={() => setEditing(false)} style={{ color: '#5B6373' }}>
-            <X size={16} />
+          <button onClick={() => setEditing(false)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+            <X size={19} />
           </button>
         </div>
       )}
@@ -212,20 +212,20 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
 
       {reached && bucket.claimPending && (
         <div
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md text-lg"
           style={{ color: GOLD, border: `1px dashed ${GOLD}`, fontFamily: 'Inter, sans-serif' }}
         >
-          <Gift size={15} /> Waiting for parent approval
+          <Gift size={18} /> Waiting for parent approval
         </div>
       )}
 
       {reached && !bucket.claimPending && (
         <button
           onClick={() => onClaim(bucket.id)}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-semibold mb-2"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md text-lg font-semibold mb-2"
           style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
         >
-          <Gift size={15} /> Goal reached — ask to claim!
+          <Gift size={18} /> Goal reached — ask to claim!
         </button>
       )}
 
@@ -238,25 +238,25 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
             value={amt}
             onChange={(e) => setAmt(e.target.value)}
             placeholder="Coins"
-            className="flex-1 min-w-0 rounded-md px-2 py-1 text-sm outline-none"
+            className="flex-1 min-w-0 rounded-md px-2.5 py-1.5 text-lg outline-none"
             style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
           />
-          <button onClick={deposit} className="text-sm px-2 py-1 rounded-md flex-shrink-0" style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}` }}>
+          <button onClick={deposit} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}` }}>
             Add
           </button>
           {bucket.saved > 0 && (
-            <button onClick={withdraw} className="text-sm px-2 py-1 rounded-md flex-shrink-0" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+            <button onClick={withdraw} className="text-lg px-2.5 py-1.5 rounded-md flex-shrink-0" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
               Take out
             </button>
           )}
-          <button onClick={() => setOpen(false)} style={{ color: '#5B6373' }}>
-            <X size={16} />
+          <button onClick={() => setOpen(false)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+            <X size={19} />
           </button>
         </div>
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="w-full text-sm py-1.5 rounded-md"
+          className="w-full text-lg py-2 rounded-md"
           style={{ color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
         >
           Move coins in / out
@@ -291,16 +291,16 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className="text-sm uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
           Savings goals
         </h3>
-        <span className="text-sm tabular-nums" style={{ color: '#5B6373', fontFamily: "'JetBrains Mono', monospace" }}>
+        <span className="text-lg tabular-nums" style={{ color: '#5B6373', fontFamily: "'JetBrains Mono', monospace" }}>
           {balance} unallocated
         </span>
       </div>
 
       {buckets.length === 0 && !creating && (
-        <div className="text-base px-1 mb-3" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-xl px-1 mb-3" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
           No goals yet. Saving up for something? Start a bucket for it.
         </div>
       )}
@@ -325,10 +325,10 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
             <button
               key={r.id}
               onClick={() => pickReward(r)}
-              className="text-sm px-2.5 py-1.5 rounded-full flex items-center gap-1"
+              className="text-lg px-3 py-2 rounded-full flex items-center gap-1"
               style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
             >
-              <Gift size={13} /> {r.name} · {r.target}
+              <Gift size={16} /> {r.name} · {r.target}
             </button>
           ))}
         </div>
@@ -341,7 +341,7 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Goal name (e.g. Lego set)"
-            className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+            className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
             style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
           />
           <input
@@ -350,14 +350,14 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             placeholder="Coins needed (e.g. 160)"
-            className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+            className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
             style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
           />
           <div className="flex gap-2">
-            <button onClick={create} className="flex-1 py-1.5 rounded-md text-sm font-semibold" style={{ background: accent.c, color: '#151C27', fontFamily: 'Inter, sans-serif' }}>
+            <button onClick={create} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: accent.c, color: '#151C27', fontFamily: 'Inter, sans-serif' }}>
               Create goal
             </button>
-            <button onClick={() => setCreating(false)} className="px-3 py-1.5 rounded-md text-sm" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+            <button onClick={() => setCreating(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
               Cancel
             </button>
           </div>
@@ -365,10 +365,10 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
       ) : (
         <button
           onClick={() => setCreating(true)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-base"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xl"
           style={{ color: accent.c, border: `1px dashed ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
         >
-          <Plus size={16} /> New goal
+          <Plus size={19} /> New goal
         </button>
       )}
     </div>
@@ -396,11 +396,11 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
 
   return (
     <div className="mt-6">
-      <h3 className="text-sm uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
         Earn coins
       </h3>
       {myTasks.length === 0 ? (
-        <div className="text-base px-1 mb-3" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-xl px-1 mb-3" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
           No tasks set up yet. Ask a parent to add some, or suggest your own below.
         </div>
       ) : (
@@ -410,32 +410,32 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
             return (
               <li
                 key={task.id}
-                className="flex items-center justify-between rounded-lg px-3 py-2.5"
+                className="flex items-center justify-between rounded-lg px-3 py-3"
                 style={{ background: '#1F2836', border: '1px solid #2A3444' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <ClipboardList size={17} style={{ color: accent.c, flexShrink: 0 }} />
-                  <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <ClipboardList size={20} style={{ color: accent.c, flexShrink: 0 }} />
+                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                     {task.name}
                   </span>
                   <span
-                    className="text-sm flex-shrink-0 px-1.5 py-0.5 rounded"
+                    className="text-lg flex-shrink-0 px-2 py-0.5 rounded"
                     style={{ background: 'rgba(232,185,74,0.14)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
                   >
                     {task.coins}
                   </span>
                 </div>
                 {pending ? (
-                  <span className="text-sm flex-shrink-0" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-lg flex-shrink-0" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
                     Waiting for approval
                   </span>
                 ) : (
                   <button
                     onClick={() => onRequest(task.id)}
-                    className="text-sm px-2.5 py-1.5 rounded-md flex-shrink-0 flex items-center gap-1"
+                    className="text-lg px-3 py-2 rounded-md flex-shrink-0 flex items-center gap-1"
                     style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
                   >
-                    <Send size={13} /> I did this
+                    <Send size={16} /> I did this
                   </button>
                 )}
               </li>
@@ -451,7 +451,7 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             placeholder="What did you do?"
-            className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+            className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
             style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
           />
           <input
@@ -460,14 +460,14 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
             value={customCoins}
             onChange={(e) => setCustomCoins(e.target.value)}
             placeholder="Coins you think it's worth"
-            className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+            className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
             style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
           />
           <div className="flex gap-2">
-            <button onClick={submitCustom} className="flex-1 py-1.5 rounded-md text-sm font-semibold flex items-center justify-center gap-1" style={{ background: accent.c, color: '#151C27', fontFamily: 'Inter, sans-serif' }}>
-              <Send size={14} /> Send request
+            <button onClick={submitCustom} className="flex-1 py-2 rounded-md text-lg font-semibold flex items-center justify-center gap-1" style={{ background: accent.c, color: '#151C27', fontFamily: 'Inter, sans-serif' }}>
+              <Send size={17} /> Send request
             </button>
-            <button onClick={() => setCustomOpen(false)} className="px-3 py-1.5 rounded-md text-sm" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+            <button onClick={() => setCustomOpen(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
               Cancel
             </button>
           </div>
@@ -475,10 +475,10 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
       ) : (
         <button
           onClick={() => setCustomOpen(true)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-base"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xl"
           style={{ color: accent.c, border: `1px dashed ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
         >
-          <Plus size={16} /> Suggest something I did
+          <Plus size={19} /> Suggest something I did
         </button>
       )}
     </div>
@@ -495,18 +495,18 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
         style={{ background: accent.bg, borderColor: accent.ring }}
       >
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm uppercase tracking-[0.2em]" style={{ color: accent.c, fontFamily: 'Inter, sans-serif' }}>
+          <span className="text-lg uppercase tracking-[0.2em]" style={{ color: accent.c, fontFamily: 'Inter, sans-serif' }}>
             {kid}'s account
           </span>
-          <Coins size={18} style={{ color: GOLD }} />
+          <Coins size={21} style={{ color: GOLD }} />
         </div>
         <div
-          className="text-7xl font-bold mt-2 mb-4 tabular-nums"
+          className="text-8xl font-bold mt-2 mb-4 tabular-nums"
           style={{ fontFamily: "'Fredoka', sans-serif", color: balance < 0 ? '#E85D75' : '#F1EFEA' }}
         >
           {balance}
         </div>
-        <div className="text-sm mb-4" style={{ color: balance < 0 ? '#E85D75' : '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-lg mb-4" style={{ color: balance < 0 ? '#E85D75' : '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
           {balance < 0 ? 'coins owed' : `${balance === 1 ? 'coin' : 'coins'} unallocated`}
         </div>
         <CoinStack count={balance} accent={accent} />
@@ -529,13 +529,13 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
 
       <div className="mt-6">
         <h3
-          className="text-sm uppercase tracking-[0.2em] mb-3 px-1"
+          className="text-lg uppercase tracking-[0.2em] mb-3 px-1"
           style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}
         >
           Recent activity
         </h3>
         {kidTx.length === 0 ? (
-          <div className="text-base px-1" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+          <div className="text-xl px-1" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
             No entries yet. Ask a parent to add your first coins!
           </div>
         ) : (
@@ -545,25 +545,25 @@ function KidPassbook({ kid, balance, transactions, buckets, onAddBucket, onDepos
               return (
                 <li
                   key={t.id}
-                  className="flex items-center justify-between rounded-lg px-3 py-2"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5"
                   style={{ background: '#1F2836', border: '1px solid #2A3444' }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Icon size={18} style={{ color, flexShrink: 0 }} />
-                    <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                    <Icon size={21} style={{ color, flexShrink: 0 }} />
+                    <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                       {label}
                     </span>
                   </div>
                   <div className="flex flex-col items-end flex-shrink-0 pl-2">
                     {amountLabel && (
                       <span
-                        className="text-base font-semibold tabular-nums"
+                        className="text-xl font-semibold tabular-nums"
                         style={{ color, fontFamily: "'JetBrains Mono', monospace" }}
                       >
                         {amountLabel}
                       </span>
                     )}
-                    <span className="text-xs" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+                    <span className="text-base" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
                       {fmtDate(t.ts)}
                     </span>
                   </div>
@@ -609,8 +609,8 @@ function PinGate({ pin, onUnlock }) {
 
   return (
     <div className="max-w-xs mx-auto text-center pt-6">
-      <Lock size={32} style={{ color: GOLD }} className="mx-auto mb-3" />
-      <div className="text-base mb-5" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+      <Lock size={36} style={{ color: GOLD }} className="mx-auto mb-3" />
+      <div className="text-xl mb-5" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
         Enter parent PIN
       </div>
       <div className={`flex justify-center gap-3 mb-6 ${error ? 'animate-pulse' : ''}`}>
@@ -633,7 +633,7 @@ function PinGate({ pin, onUnlock }) {
             <button
               key={i}
               onClick={() => (d === '⌫' ? setEntry(entry.slice(0, -1)) : press(d))}
-              className="rounded-xl py-3 text-xl font-medium transition-colors"
+              className="rounded-xl py-3 text-2xl font-medium transition-colors"
               style={{ background: '#1F2836', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
             >
               {d}
@@ -864,39 +864,39 @@ function ParentPanel({ data, setData }) {
     <div className="max-w-lg mx-auto">
       {toast && (
         <div
-          className="mb-4 rounded-lg px-4 py-2 text-base flex items-center gap-2"
+          className="mb-4 rounded-lg px-4 py-2.5 text-xl flex items-center gap-2"
           style={{ background: 'rgba(63,167,150,0.15)', border: '1px solid rgba(63,167,150,0.4)', color: '#3FA796', fontFamily: 'Inter, sans-serif' }}
         >
-          <Check size={16} /> {toast}
+          <Check size={19} /> {toast}
         </div>
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <span className="text-lg uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
           Parent control
         </span>
         <div className="flex items-center gap-2">
           <input type="file" accept="application/json" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
           <button
             onClick={triggerImport}
-            className="flex items-center gap-1 text-sm px-2 py-1 rounded-md"
+            className="flex items-center gap-1 text-lg px-2.5 py-1.5 rounded-md"
             style={{ color: '#8B94A3', border: '1px solid #2A3444', fontFamily: 'Inter, sans-serif' }}
           >
-            <Upload size={14} /> Restore
+            <Upload size={17} /> Restore
           </button>
           <button
             onClick={exportData}
-            className="flex items-center gap-1 text-sm px-2 py-1 rounded-md"
+            className="flex items-center gap-1 text-lg px-2.5 py-1.5 rounded-md"
             style={{ color: '#8B94A3', border: '1px solid #2A3444', fontFamily: 'Inter, sans-serif' }}
           >
-            <Download size={14} /> Backup
+            <Download size={17} /> Backup
           </button>
           <button
             onClick={() => setShowPinChange((s) => !s)}
-            className="flex items-center gap-1 text-sm px-2 py-1 rounded-md"
+            className="flex items-center gap-1 text-lg px-2.5 py-1.5 rounded-md"
             style={{ color: '#8B94A3', border: '1px solid #2A3444', fontFamily: 'Inter, sans-serif' }}
           >
-            <Settings size={14} /> PIN
+            <Settings size={17} /> PIN
           </button>
         </div>
       </div>
@@ -910,14 +910,14 @@ function ParentPanel({ data, setData }) {
             value={newPin}
             onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
             placeholder="New 4-digit PIN"
-            className="flex-1 bg-transparent outline-none text-base"
+            className="flex-1 bg-transparent outline-none text-xl"
             style={{ color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
           />
-          <button onClick={savePin} className="text-sm px-2 py-1 rounded-md" style={{ background: GOLD, color: '#1B2430' }}>
+          <button onClick={savePin} className="text-lg px-2.5 py-1.5 rounded-md" style={{ background: GOLD, color: '#1B2430' }}>
             Save
           </button>
-          <button onClick={() => setShowPinChange(false)} className="text-sm px-1" style={{ color: '#5B6373' }}>
-            <X size={16} />
+          <button onClick={() => setShowPinChange(false)} className="text-lg px-1" className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+            <X size={19} />
           </button>
         </div>
       )}
@@ -929,10 +929,10 @@ function ParentPanel({ data, setData }) {
             className="rounded-xl p-4"
             style={{ background: ACCENTS[kid].bg, border: `1px solid ${ACCENTS[kid].ring}` }}
           >
-            <div className="text-sm uppercase tracking-[0.15em] mb-1" style={{ color: ACCENTS[kid].c, fontFamily: 'Inter, sans-serif' }}>
+            <div className="text-lg uppercase tracking-[0.15em] mb-1" style={{ color: ACCENTS[kid].c, fontFamily: 'Inter, sans-serif' }}>
               {kid}
             </div>
-            <div className="text-4xl font-bold tabular-nums" style={{ fontFamily: "'Fredoka', sans-serif", color: data.balances[kid] < 0 ? '#E85D75' : '#F1EFEA' }}>
+            <div className="text-5xl font-bold tabular-nums" style={{ fontFamily: "'Fredoka', sans-serif", color: data.balances[kid] < 0 ? '#E85D75' : '#F1EFEA' }}>
               {data.balances[kid]}
             </div>
           </div>
@@ -941,28 +941,28 @@ function ParentPanel({ data, setData }) {
 
       {(pendingRequests.length > 0 || pendingClaims.length > 0) && (
         <div className="mb-6">
-          <h3 className="text-sm uppercase tracking-[0.2em] mb-3 px-1" style={{ color: GOLD, fontFamily: 'Inter, sans-serif' }}>
+          <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: GOLD, fontFamily: 'Inter, sans-serif' }}>
             Pending requests ({pendingRequests.length + pendingClaims.length})
           </h3>
           <ul className="space-y-2">
             {pendingRequests.map((req) => (
               <li
                 key={req.id}
-                className="flex items-center justify-between rounded-lg px-3 py-2.5 gap-2"
+                className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
                 style={{ background: 'rgba(232,185,74,0.1)', border: `1px solid ${GOLD}` }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="text-xs uppercase font-semibold px-1.5 py-0.5 rounded flex-shrink-0"
+                    className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
                   >
                     {req.kid}
                   </span>
-                  <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                     {req.taskName}
                   </span>
                   {req.custom && (
-                    <span className="text-xs flex-shrink-0 px-1 rounded" style={{ background: '#2A3444', color: '#8B94A3' }}>
+                    <span className="text-base flex-shrink-0 px-1 rounded" style={{ background: '#2A3444', color: '#8B94A3' }}>
                       suggested
                     </span>
                   )}
@@ -973,14 +973,14 @@ function ParentPanel({ data, setData }) {
                     min="0"
                     value={getReqCoins(req)}
                     onChange={(e) => setReqCoins(req.id, e.target.value)}
-                    className="w-14 text-center rounded-md py-1 text-sm outline-none"
+                    className="w-16 text-center rounded-md py-1.5 text-lg outline-none"
                     style={{ background: '#151C27', border: '1px solid #2A3444', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
                   />
-                  <button onClick={() => approveRequest(req.id)} className="p-1.5 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
-                    <Check size={17} />
+                  <button onClick={() => approveRequest(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
+                    <Check size={20} />
                   </button>
-                  <button onClick={() => rejectRequest(req.id)} className="p-1.5 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
-                    <X size={17} />
+                  <button onClick={() => rejectRequest(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
+                    <X size={20} />
                   </button>
                 </div>
               </li>
@@ -988,30 +988,30 @@ function ParentPanel({ data, setData }) {
             {pendingClaims.map(({ kid, bucket }) => (
               <li
                 key={`claim-${bucket.id}`}
-                className="flex items-center justify-between rounded-lg px-3 py-2.5 gap-2"
+                className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
                 style={{ background: 'rgba(232,185,74,0.1)', border: `1px solid ${GOLD}` }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="text-xs uppercase font-semibold px-1.5 py-0.5 rounded flex-shrink-0"
+                    className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[kid].bg, color: ACCENTS[kid].c }}
                   >
                     {kid}
                   </span>
-                  <Gift size={16} style={{ color: GOLD, flexShrink: 0 }} />
-                  <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
+                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                     {bucket.name}
                   </span>
-                  <span className="text-sm flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span className="text-lg flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
                     {bucket.saved} coins
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button onClick={() => approveClaim(kid, bucket.id)} className="p-1.5 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
-                    <Check size={17} />
+                  <button onClick={() => approveClaim(kid, bucket.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
+                    <Check size={20} />
                   </button>
-                  <button onClick={() => rejectClaim(kid, bucket.id)} className="p-1.5 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
-                    <X size={17} />
+                  <button onClick={() => rejectClaim(kid, bucket.id)} className="p-2 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
+                    <X size={20} />
                   </button>
                 </div>
               </li>
@@ -1026,7 +1026,7 @@ function ParentPanel({ data, setData }) {
             <button
               key={kid}
               onClick={() => setSelKid(kid)}
-              className="flex-1 py-2 rounded-lg text-base font-medium transition-colors"
+              className="flex-1 py-2.5 rounded-lg text-xl font-medium transition-colors"
               style={{
                 background: selKid === kid ? ACCENTS[kid].bg : 'transparent',
                 border: `1px solid ${selKid === kid ? ACCENTS[kid].ring : '#2A3444'}`,
@@ -1042,7 +1042,7 @@ function ParentPanel({ data, setData }) {
         <div className="flex gap-2 mb-3">
           <button
             onClick={() => setMode('add')}
-            className="flex-1 py-2 rounded-lg text-base font-medium flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 rounded-lg text-xl font-medium flex items-center justify-center gap-1"
             style={{
               background: mode === 'add' ? 'rgba(63,167,150,0.18)' : 'transparent',
               border: `1px solid ${mode === 'add' ? '#3FA796' : '#2A3444'}`,
@@ -1050,11 +1050,11 @@ function ParentPanel({ data, setData }) {
               fontFamily: 'Inter, sans-serif',
             }}
           >
-            <Plus size={16} /> Add
+            <Plus size={19} /> Add
           </button>
           <button
             onClick={() => setMode('deduct')}
-            className="flex-1 py-2 rounded-lg text-base font-medium flex items-center justify-center gap-1"
+            className="flex-1 py-2.5 rounded-lg text-xl font-medium flex items-center justify-center gap-1"
             style={{
               background: mode === 'deduct' ? 'rgba(232,93,117,0.18)' : 'transparent',
               border: `1px solid ${mode === 'deduct' ? '#E85D75' : '#2A3444'}`,
@@ -1062,7 +1062,7 @@ function ParentPanel({ data, setData }) {
               fontFamily: 'Inter, sans-serif',
             }}
           >
-            <Minus size={16} /> Deduct
+            <Minus size={19} /> Deduct
           </button>
         </div>
 
@@ -1072,7 +1072,7 @@ function ParentPanel({ data, setData }) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount"
-          className="w-full mb-2 rounded-lg px-3 py-2 text-base outline-none"
+          className="w-full mb-2 rounded-lg px-3 py-2.5 text-xl outline-none"
           style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
         />
         <input
@@ -1080,13 +1080,13 @@ function ParentPanel({ data, setData }) {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason (e.g. Practiced piano)"
-          className="w-full mb-3 rounded-lg px-3 py-2 text-base outline-none"
+          className="w-full mb-3 rounded-lg px-3 py-2.5 text-xl outline-none"
           style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
         />
         <button
           onClick={applyTransaction}
           disabled={!amount || parseInt(amount, 10) <= 0}
-          className="w-full py-2 rounded-lg text-base font-semibold disabled:opacity-40"
+          className="w-full py-2.5 rounded-lg text-xl font-semibold disabled:opacity-40"
           style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
         >
           {mode === 'add' ? 'Add coins' : 'Deduct coins'}
@@ -1095,7 +1095,7 @@ function ParentPanel({ data, setData }) {
 
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3 px-1">
-          <h3 className="text-sm uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+          <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
             Task catalog
           </h3>
         </div>
@@ -1106,27 +1106,27 @@ function ParentPanel({ data, setData }) {
             return (
               <li key={task.id}>
                 <div
-                  className="flex items-center justify-between rounded-lg px-3 py-2"
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5"
                   style={{ background: '#1F2836', border: '1px solid #2A3444' }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <ClipboardList size={16} style={{ color: '#8B94A3', flexShrink: 0 }} />
-                    <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                    <ClipboardList size={19} style={{ color: '#8B94A3', flexShrink: 0 }} />
+                    <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                       {task.name}
                     </span>
-                    <span className="text-sm flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span className="text-lg flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
                       {task.coins}
                     </span>
-                    <span className="text-xs flex-shrink-0 px-1 rounded" style={{ background: assignedColor.bg, color: assignedColor.c }}>
+                    <span className="text-base flex-shrink-0 px-1 rounded" style={{ background: assignedColor.bg, color: assignedColor.c }}>
                       {assignedLabel}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={() => startEditTask(task)} style={{ color: '#5B6373' }}>
-                      <Pencil size={15} />
+                    <button onClick={() => startEditTask(task)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+                      <Pencil size={18} />
                     </button>
-                    <button onClick={() => deleteTask(task.id)} style={{ color: '#5B6373' }}>
-                      <Trash2 size={15} />
+                    <button onClick={() => deleteTask(task.id)} className="p-1.5 -m-1.5" style={{ color: '#5B6373' }}>
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
@@ -1137,7 +1137,7 @@ function ParentPanel({ data, setData }) {
                       value={editTaskName}
                       onChange={(e) => setEditTaskName(e.target.value)}
                       placeholder="Task name"
-                      className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+                      className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
                       style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
                     />
                     <input
@@ -1146,7 +1146,7 @@ function ParentPanel({ data, setData }) {
                       value={editTaskCoins}
                       onChange={(e) => setEditTaskCoins(e.target.value)}
                       placeholder="Coins"
-                      className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+                      className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
                       style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
                     />
                     <div className="flex gap-2 mb-2">
@@ -1154,7 +1154,7 @@ function ParentPanel({ data, setData }) {
                         <button
                           key={kid}
                           onClick={() => toggleEditTaskKid(kid)}
-                          className="flex-1 py-1.5 rounded-md text-sm"
+                          className="flex-1 py-2 rounded-md text-lg"
                           style={{
                             background: editTaskKids.includes(kid) ? ACCENTS[kid].bg : 'transparent',
                             border: `1px solid ${editTaskKids.includes(kid) ? ACCENTS[kid].ring : '#2A3444'}`,
@@ -1166,14 +1166,14 @@ function ParentPanel({ data, setData }) {
                         </button>
                       ))}
                     </div>
-                    <div className="text-xs mb-2" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+                    <div className="text-base mb-2" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
                       Leave both unselected to make it available to everyone.
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => saveEditTask(task.id)} className="flex-1 py-1.5 rounded-md text-sm font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
+                      <button onClick={() => saveEditTask(task.id)} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
                         Save changes
                       </button>
-                      <button onClick={() => setEditingTaskId(null)} className="px-3 py-1.5 rounded-md text-sm" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+                      <button onClick={() => setEditingTaskId(null)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
                         Cancel
                       </button>
                     </div>
@@ -1191,7 +1191,7 @@ function ParentPanel({ data, setData }) {
               value={newTaskName}
               onChange={(e) => setNewTaskName(e.target.value)}
               placeholder="Task name (e.g. Practice violin)"
-              className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+              className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
               style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
             />
             <input
@@ -1200,7 +1200,7 @@ function ParentPanel({ data, setData }) {
               value={newTaskCoins}
               onChange={(e) => setNewTaskCoins(e.target.value)}
               placeholder="Coins earned"
-              className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+              className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
               style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
             />
             <div className="flex gap-2 mb-2">
@@ -1208,7 +1208,7 @@ function ParentPanel({ data, setData }) {
                 <button
                   key={kid}
                   onClick={() => toggleNewTaskKid(kid)}
-                  className="flex-1 py-1.5 rounded-md text-sm"
+                  className="flex-1 py-2 rounded-md text-lg"
                   style={{
                     background: newTaskKids.includes(kid) ? ACCENTS[kid].bg : 'transparent',
                     border: `1px solid ${newTaskKids.includes(kid) ? ACCENTS[kid].ring : '#2A3444'}`,
@@ -1220,14 +1220,14 @@ function ParentPanel({ data, setData }) {
                 </button>
               ))}
             </div>
-            <div className="text-xs mb-2" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+            <div className="text-base mb-2" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
               Leave both unselected to make it available to everyone.
             </div>
             <div className="flex gap-2">
-              <button onClick={addTask} className="flex-1 py-1.5 rounded-md text-sm font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
+              <button onClick={addTask} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
                 Add task
               </button>
-              <button onClick={() => setAddingTask(false)} className="px-3 py-1.5 rounded-md text-sm" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+              <button onClick={() => setAddingTask(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
                 Cancel
               </button>
             </div>
@@ -1235,36 +1235,36 @@ function ParentPanel({ data, setData }) {
         ) : (
           <button
             onClick={() => setAddingTask(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-base"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xl"
             style={{ color: '#8B94A3', border: '1px dashed #2A3444', fontFamily: 'Inter, sans-serif' }}
           >
-            <Plus size={16} /> New task
+            <Plus size={19} /> New task
           </button>
         )}
       </div>
 
       <div className="mb-6">
-        <h3 className="text-sm uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
           Reward catalog
         </h3>
         <ul className="space-y-2 mb-2">
           {data.rewardCatalog.map((r) => (
             <li
               key={r.id}
-              className="flex items-center justify-between rounded-lg px-3 py-2"
+              className="flex items-center justify-between rounded-lg px-3 py-2.5"
               style={{ background: '#1F2836', border: '1px solid #2A3444' }}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <Gift size={16} style={{ color: GOLD, flexShrink: 0 }} />
-                <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
+                <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                   {r.name}
                 </span>
-                <span className="text-sm flex-shrink-0" style={{ color: '#8B94A3', fontFamily: "'JetBrains Mono', monospace" }}>
+                <span className="text-lg flex-shrink-0" style={{ color: '#8B94A3', fontFamily: "'JetBrains Mono', monospace" }}>
                   {r.target} coins
                 </span>
               </div>
               <button onClick={() => deleteReward(r.id)} style={{ color: '#5B6373', flexShrink: 0 }}>
-                <Trash2 size={15} />
+                <Trash2 size={18} />
               </button>
             </li>
           ))}
@@ -1277,7 +1277,7 @@ function ParentPanel({ data, setData }) {
               value={newRewardName}
               onChange={(e) => setNewRewardName(e.target.value)}
               placeholder="Reward name (e.g. Nerf gun)"
-              className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+              className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
               style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}
             />
             <input
@@ -1286,14 +1286,14 @@ function ParentPanel({ data, setData }) {
               value={newRewardTarget}
               onChange={(e) => setNewRewardTarget(e.target.value)}
               placeholder="Coins needed"
-              className="w-full mb-2 rounded-md px-2 py-1.5 text-base outline-none"
+              className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
               style={{ background: '#151C27', border: '1px solid #2A3444', color: '#D8DCE3', fontFamily: "'JetBrains Mono', monospace" }}
             />
             <div className="flex gap-2">
-              <button onClick={addReward} className="flex-1 py-1.5 rounded-md text-sm font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
+              <button onClick={addReward} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}>
                 Add reward
               </button>
-              <button onClick={() => setAddingReward(false)} className="px-3 py-1.5 rounded-md text-sm" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
+              <button onClick={() => setAddingReward(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: '#8B94A3', border: '1px solid #2A3444' }}>
                 Cancel
               </button>
             </div>
@@ -1301,19 +1301,19 @@ function ParentPanel({ data, setData }) {
         ) : (
           <button
             onClick={() => setAddingReward(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-base"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xl"
             style={{ color: '#8B94A3', border: '1px dashed #2A3444', fontFamily: 'Inter, sans-serif' }}
           >
-            <Plus size={16} /> New reward
+            <Plus size={19} /> New reward
           </button>
         )}
       </div>
 
-      <h3 className="text-sm uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
         Full ledger
       </h3>
       {data.transactions.length === 0 ? (
-        <div className="text-base px-1" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-xl px-1" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
           No transactions yet.
         </div>
       ) : (
@@ -1323,31 +1323,31 @@ function ParentPanel({ data, setData }) {
             return (
               <li
                 key={t.id}
-                className="flex items-center justify-between rounded-lg px-3 py-2"
+                className="flex items-center justify-between rounded-lg px-3 py-2.5"
                 style={{ background: '#1F2836', border: '1px solid #2A3444' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="text-xs uppercase font-semibold px-1.5 py-0.5 rounded flex-shrink-0"
+                    className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[t.kid].bg, color: ACCENTS[t.kid].c }}
                   >
                     {t.kid}
                   </span>
-                  <Icon size={16} style={{ color, flexShrink: 0 }} />
-                  <span className="text-base truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
+                  <Icon size={19} style={{ color, flexShrink: 0 }} />
+                  <span className="text-xl truncate" style={{ color: '#D8DCE3', fontFamily: 'Inter, sans-serif' }}>
                     {label}
                   </span>
                 </div>
                 <div className="flex flex-col items-end flex-shrink-0 pl-2">
                   {amountLabel && (
                     <span
-                      className="text-base font-semibold tabular-nums"
+                      className="text-xl font-semibold tabular-nums"
                       style={{ color, fontFamily: "'JetBrains Mono', monospace" }}
                     >
                       {amountLabel}
                     </span>
                   )}
-                  <span className="text-xs" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-base" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
                     {fmtDate(t.ts)}
                   </span>
                 </div>
@@ -1542,23 +1542,23 @@ function CoinBank() {
     >
       <div className="max-w-lg mx-auto mb-8 text-center">
         <div className="flex items-center justify-center gap-2 mb-1">
-          <Coins size={24} style={{ color: GOLD }} />
-          <h1 className="text-3xl font-bold" style={{ fontFamily: "'Fredoka', sans-serif", color: '#F1EFEA' }}>
+          <Coins size={28} style={{ color: GOLD }} />
+          <h1 className="text-4xl font-bold" style={{ fontFamily: "'Fredoka', sans-serif", color: '#F1EFEA' }}>
             The Coin Bank
           </h1>
         </div>
-        <p className="text-sm" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <p className="text-lg" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
           A little passbook for big savers
         </p>
       </div>
 
       {syncError && (
         <div className="max-w-lg mx-auto mb-6 rounded-lg px-4 py-3 flex items-start justify-between gap-3" style={{ background: 'rgba(232,93,117,0.12)', border: '1px solid #E85D75' }}>
-          <span className="text-sm" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
+          <span className="text-lg" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
             {syncError}
           </span>
           <button onClick={() => setSyncError(null)} style={{ color: '#E85D75', flexShrink: 0 }}>
-            <X size={16} />
+            <X size={19} />
           </button>
         </div>
       )}
@@ -1572,7 +1572,7 @@ function CoinBank() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className="flex-1 py-2.5 rounded-xl text-base font-medium transition-colors flex items-center justify-center gap-1.5 relative"
+            className="flex-1 py-3 rounded-xl text-xl font-medium transition-colors flex items-center justify-center gap-1.5 relative"
             style={{
               background: tab === t ? (t === 'Parent' ? 'rgba(232,185,74,0.14)' : ACCENTS[t]?.bg) : '#1F2836',
               border: `1px solid ${tab === t ? (t === 'Parent' ? GOLD : ACCENTS[t]?.ring) : '#2A3444'}`,
@@ -1580,11 +1580,11 @@ function CoinBank() {
               fontFamily: 'Inter, sans-serif',
             }}
           >
-            {t === 'Parent' && <Lock size={14} />}
+            {t === 'Parent' && <Lock size={17} />}
             {t}
             {t === 'Parent' && pendingCount > 0 && (
               <span
-                className="absolute -top-1.5 -right-1.5 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                className="absolute -top-1.5 -right-1.5 text-base font-bold rounded-full w-6 h-6 flex items-center justify-center"
                 style={{ background: '#E85D75', color: '#fff' }}
               >
                 {pendingCount}
@@ -1596,7 +1596,7 @@ function CoinBank() {
       </div>
 
       {!loaded ? (
-        <div className="text-center text-base" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
+        <div className="text-center text-xl" style={{ color: '#5B6373', fontFamily: 'Inter, sans-serif' }}>
           Loading passbook…
         </div>
       ) : tab === 'Parent' ? (
@@ -1668,11 +1668,11 @@ function SiteGate() {
       style={{ background: '#151C27' }}
     >
       <form onSubmit={submit} className="max-w-xs w-full text-center">
-        <Coins size={32} style={{ color: GOLD }} className="mx-auto mb-3" />
+        <Coins size={36} style={{ color: GOLD }} className="mx-auto mb-3" />
         <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: "'Fredoka', sans-serif", color: '#F1EFEA' }}>
           The Coin Bank
         </h1>
-        <p className="text-base mb-6" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
+        <p className="text-xl mb-6" style={{ color: '#8B94A3', fontFamily: 'Inter, sans-serif' }}>
           Enter the family password to continue
         </p>
         <input
@@ -1680,7 +1680,7 @@ function SiteGate() {
           value={entry}
           onChange={(e) => setEntry(e.target.value)}
           autoFocus
-          className="w-full mb-3 rounded-lg px-3 py-2.5 text-base outline-none text-center"
+          className="w-full mb-3 rounded-lg px-3 py-3 text-xl outline-none text-center"
           style={{
             background: '#1F2836',
             border: `1px solid ${error ? '#E85D75' : '#2A3444'}`,
@@ -1689,13 +1689,13 @@ function SiteGate() {
           }}
         />
         {error && (
-          <p className="text-sm mb-3" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
+          <p className="text-lg mb-3" style={{ color: '#E85D75', fontFamily: 'Inter, sans-serif' }}>
             That's not it — try again.
           </p>
         )}
         <button
           type="submit"
-          className="w-full py-2.5 rounded-lg text-base font-semibold"
+          className="w-full py-3 rounded-lg text-xl font-semibold"
           style={{ background: GOLD, color: '#1B2430', fontFamily: 'Inter, sans-serif' }}
         >
           Enter
