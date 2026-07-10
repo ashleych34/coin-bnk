@@ -908,6 +908,26 @@ function ParentPanel({ data, setData }) {
     setData((prev) => ({ ...prev, rewardCatalog: prev.rewardCatalog.filter((r) => r.id !== id) }));
   };
 
+  const [editingRewardId, setEditingRewardId] = useState(null);
+  const [editRewardName, setEditRewardName] = useState('');
+  const [editRewardTarget, setEditRewardTarget] = useState('');
+
+  const startEditReward = (reward) => {
+    setEditingRewardId(reward.id);
+    setEditRewardName(reward.name);
+    setEditRewardTarget(String(reward.target));
+  };
+
+  const saveEditReward = (id) => {
+    const target = parseInt(editRewardTarget, 10);
+    if (!editRewardName.trim() || !target || target <= 0) return;
+    setData((prev) => ({
+      ...prev,
+      rewardCatalog: prev.rewardCatalog.map((r) => (r.id === id ? { ...r, name: editRewardName.trim(), target } : r)),
+    }));
+    setEditingRewardId(null);
+  };
+
   const applyTransaction = () => {
     const amt = parseInt(amount, 10);
     if (!amt || amt <= 0) return;
@@ -1356,23 +1376,58 @@ function ParentPanel({ data, setData }) {
         </h3>
         <ul className="space-y-2 mb-2">
           {data.rewardCatalog.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center justify-between rounded-lg px-3 py-2.5"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
-                <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
-                  {r.name}
-                </span>
-                <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {r.target} coins
-                </span>
+            <li key={r.id}>
+              <div
+                className="flex items-center justify-between rounded-lg px-3 py-2.5"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
+                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                    {r.name}
+                  </span>
+                  <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {r.target} coins
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={() => startEditReward(r)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+                    <Pencil size={18} />
+                  </button>
+                  <button onClick={() => deleteReward(r.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
-              <button onClick={() => deleteReward(r.id)} style={{ color: 'var(--text-dim)', flexShrink: 0 }}>
-                <Trash2 size={18} />
-              </button>
+              {editingRewardId === r.id && (
+                <div className="mt-1.5 rounded-lg p-3" style={{ background: 'var(--surface)', border: `1px solid ${GOLD}` }}>
+                  <input
+                    type="text"
+                    value={editRewardName}
+                    onChange={(e) => setEditRewardName(e.target.value)}
+                    placeholder="Reward name"
+                    className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={editRewardTarget}
+                    onChange={(e) => setEditRewardTarget(e.target.value)}
+                    placeholder="Coins needed"
+                    className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => saveEditReward(r.id)} className="flex-1 py-2 rounded-md text-lg font-semibold" style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}>
+                      Save changes
+                    </button>
+                    <button onClick={() => setEditingRewardId(null)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
