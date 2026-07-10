@@ -655,6 +655,7 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   const [open, setOpen] = useState(false);
   const [amt, setAmt] = useState('');
   const maxPayable = Math.min(balance, debit);
+  const canPayFull = balance >= debit;
 
   if (debit <= 0) return null;
 
@@ -663,6 +664,11 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
     if (!n || n <= 0 || n > maxPayable) return;
     onPayDown(n);
     setAmt('');
+    setOpen(false);
+  };
+
+  const payFull = () => {
+    onPayDown(debit);
     setOpen(false);
   };
 
@@ -706,13 +712,24 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
           </button>
         </div>
       ) : (
-        <button
-          onClick={() => setOpen(true)}
-          className="w-full text-lg py-2 rounded-md"
-          style={{ color: '#E85D75', border: '1px solid #E85D75', fontFamily: 'Inter, sans-serif' }}
-        >
-          Pay down debt from credit ({maxPayable} available)
-        </button>
+        <div className="flex gap-2">
+          {canPayFull && (
+            <button
+              onClick={payFull}
+              className="flex-1 text-lg py-2 rounded-md font-semibold"
+              style={{ background: '#E85D75', color: '#fff', fontFamily: 'Inter, sans-serif' }}
+            >
+              Pay in full ({debit})
+            </button>
+          )}
+          <button
+            onClick={() => setOpen(true)}
+            className="flex-1 text-lg py-2 rounded-md"
+            style={{ color: '#E85D75', border: '1px solid #E85D75', fontFamily: 'Inter, sans-serif' }}
+          >
+            Pay partial ({maxPayable} available)
+          </button>
+        </div>
       )}
     </div>
   );
