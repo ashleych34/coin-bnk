@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, Check, Target, Trash2, Gift, Pencil, Download, Upload, ClipboardList, Send, ThumbsDown, Palette, CreditCard } from 'lucide-react';
+import { Coins, Lock, Plus, Minus, Settings, ArrowUpCircle, ArrowDownCircle, X, Check, Target, Trash2, Gift, Pencil, Download, Upload, ClipboardList, Send, ThumbsDown, Palette, CreditCard, ChevronDown, ChevronUp, Sun, CheckCircle2, Circle } from 'lucide-react';
 import { storageAdapter } from './storageAdapter';
 
 const KIDS = ['Ryan', 'Emma'];
@@ -136,17 +136,27 @@ function uid() {
 const HISTORY_LIMIT = 400;
 const RESOLVED_LIMIT = 50;
 
+// Local date as YYYY-MM-DD — used to scope daily plans to "today".
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function pruneData(d) {
   const keepRecentResolved = (list) => [
     ...list.filter((r) => r.status === 'pending'),
     ...list.filter((r) => r.status !== 'pending').slice(0, RESOLVED_LIMIT),
   ];
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const prunePlans = (plans) =>
+    Object.fromEntries(Object.entries(plans || {}).map(([k, list]) => [k, (list || []).filter((it) => it.ts > weekAgo)]));
   return {
     ...d,
     transactions: d.transactions.slice(0, HISTORY_LIMIT),
     taskRequests: keepRecentResolved(d.taskRequests),
     debtRequests: keepRecentResolved(d.debtRequests),
     transfers: keepRecentResolved(d.transfers),
+    dailyPlans: prunePlans(d.dailyPlans),
   };
 }
 
@@ -164,6 +174,7 @@ function withDefaults(parsed) {
     taskRequests: parsed.taskRequests || [],
     debtRequests: parsed.debtRequests || [],
     transfers: parsed.transfers || [],
+    dailyPlans: { Ryan: [], Emma: [], Test: [], ...(parsed.dailyPlans || {}) },
   };
 }
 
@@ -185,6 +196,7 @@ const defaultData = {
   taskRequests: [],
   debtRequests: [],
   transfers: [],
+  dailyPlans: { Ryan: [], Emma: [], Test: [] },
 };
 
 function fmtDate(ts) {
@@ -481,6 +493,7 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
       ))}
 
       {rewardCatalog && rewardCatalog.length > 0 && !creating && (
+        <CollapsibleSection storageId={`rewards-${kid}`} title="Reward ideas from Mom" defaultOpen={false}>
         <div className="space-y-2 mb-3">
           {rewardCatalog.map((r) => {
             const pendingAdvance = pendingAdvanceNames.has(r.name);
@@ -534,6 +547,7 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
             );
           })}
         </div>
+        </CollapsibleSection>
       )}
 
       {creating ? (
@@ -577,6 +591,223 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
   );
 }
 
+function CollapsibleSection({ storageId, title, accentColor, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(() => {
+    try {
+      const v = localStorage.getItem(`coinbank-collapse-${storageId}`);
+      return v === null ? defaultOpen : v === 'open';
+    } catch (e) {
+      return defaultOpen;
+    }
+  });
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    try {
+      localStorage.setItem(`coinbank-collapse-${storageId}`, next ? 'open' : 'closed');
+    } catch (e) {
+      // fine — just won't remember
+    }
+  };
+  return (
+    <div className="mt-6">
+      <button
+        onClick={toggle}
+        className="w-full flex items-center justify-between px-1 mb-1"
+        style={{ color: accentColor || 'var(--text-muted)' }}
+      >
+        <span className="text-lg uppercase tracking-[0.2em]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          {title}
+        </span>
+        {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
+
+function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRemove, onRequest }) {
+  const accent = ACCENTS[kid];
+  const [adding, setAdding] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customCoins, setCustomCoins] = useState('');
+
+  const today = todayStr();
+  const items = (plan || []).filter((it) => it.date === today);
+  const myCatalog = taskCatalog.filter((t) => !t.kids || t.kids.length === 0 || t.kids.includes(kid));
+  const plannedTaskIds = new Set(items.filter((it) => it.taskId).map((it) => it.taskId));
+
+  const requestStatus = (item) => {
+    if (!item.requestId) return null;
+    const req = taskRequests.find((r) => r.id === item.requestId);
+    if (!req) return { label: 'Sent', color: 'var(--text-muted)' };
+    if (req.status === 'pending') return { label: 'Waiting for Mom', color: GOLD };
+    if (req.status === 'approved') return { label: `+${req.coins} earned!`, color: '#3FA796' };
+    return { label: 'Declined', color: '#E85D75' };
+  };
+
+  const addCustom = () => {
+    const coins = parseInt(customCoins, 10);
+    if (!customName.trim() || !coins || coins <= 0) return;
+    onAdd(customName.trim(), coins, null);
+    setCustomName('');
+    setCustomCoins('');
+    setAdding(false);
+  };
+
+  const doneCount = items.filter((it) => it.done).length;
+
+  return (
+    <div className="mt-6">
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center gap-2">
+          <Sun size={20} style={{ color: GOLD }} />
+          <h3 className="text-lg uppercase tracking-[0.2em]" style={{ color: 'var(--text-bright)', fontFamily: 'Inter, sans-serif' }}>
+            My plan for today
+          </h3>
+        </div>
+        {items.length > 0 && (
+          <span className="text-lg tabular-nums" style={{ color: doneCount === items.length ? '#3FA796' : 'var(--text-dim)', fontFamily: "'JetBrains Mono', monospace" }}>
+            {doneCount}/{items.length}
+          </span>
+        )}
+      </div>
+
+      {items.length === 0 && !adding && (
+        <div className="text-xl px-1 mb-3" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+          What will you do today? Add your tasks and check them off!
+        </div>
+      )}
+
+      <ul className="space-y-2 mb-2">
+        {items.map((item) => {
+          const status = requestStatus(item);
+          return (
+            <li
+              key={item.id}
+              className="flex items-center justify-between rounded-lg px-3 py-2.5 gap-2"
+              style={{
+                background: item.done ? accent.bg : 'var(--surface)',
+                border: `1px solid ${item.done ? accent.ring : 'var(--border)'}`,
+              }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <button
+                  onClick={() => !item.requestId && onToggle(item.id)}
+                  className="flex-shrink-0"
+                  style={{ color: item.done ? accent.c : 'var(--text-dim)' }}
+                >
+                  {item.done ? <CheckCircle2 size={26} /> : <Circle size={26} />}
+                </button>
+                <span
+                  className="text-xl truncate"
+                  style={{
+                    color: item.done ? accent.c : 'var(--text-primary)',
+                    textDecoration: item.done && status ? 'none' : item.done ? 'line-through' : 'none',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {item.name}
+                </span>
+                <span
+                  className="text-base flex-shrink-0 px-2 py-0.5 rounded"
+                  style={{ background: 'rgba(var(--gold-rgb), 0.14)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  {item.coins}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {status ? (
+                  <span className="text-base" style={{ color: status.color, fontFamily: 'Inter, sans-serif' }}>
+                    {status.label}
+                  </span>
+                ) : item.done ? (
+                  <button
+                    onClick={() => onRequest(item.id)}
+                    className="text-base px-2.5 py-1.5 rounded-md flex items-center gap-1"
+                    style={{ background: GOLD, color: 'var(--text-on-gold)', fontFamily: 'Inter, sans-serif' }}
+                  >
+                    <Send size={13} /> Ask for coins
+                  </button>
+                ) : (
+                  <button onClick={() => onRemove(item.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {adding ? (
+        <div className="rounded-lg p-3" style={{ background: 'var(--surface)', border: `1px solid ${accent.ring}` }}>
+          {myCatalog.filter((t) => !plannedTaskIds.has(t.id)).length > 0 && (
+            <>
+              <p className="text-base mb-2" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+                Pick from your list:
+              </p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {myCatalog.filter((t) => !plannedTaskIds.has(t.id)).map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => onAdd(t.name, t.coins, t.id)}
+                    className="text-base px-3 py-2 rounded-full"
+                    style={{ background: accent.bg, color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {t.name} · {t.coins}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <p className="text-base mb-2" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+            Or make your own:
+          </p>
+          <input
+            type="text"
+            value={customName}
+            onChange={(e) => setCustomName(e.target.value)}
+            placeholder="What will you do?"
+            className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
+          />
+          <input
+            type="number"
+            min="1"
+            value={customCoins}
+            onChange={(e) => setCustomCoins(e.target.value)}
+            placeholder="Coins it's worth"
+            className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={addCustom}
+              disabled={!customName.trim() || !customCoins || parseInt(customCoins, 10) <= 0}
+              className="flex-1 py-2 rounded-md text-lg font-semibold disabled:opacity-40"
+              style={{ background: accent.c, color: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}
+            >
+              Add to my plan
+            </button>
+            <button onClick={() => setAdding(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              Done
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-lg"
+          style={{ color: accent.c, border: `1px dashed ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
+        >
+          <Plus size={18} /> Add a task for today
+        </button>
+      )}
+    </div>
+  );
+}
+
 function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom }) {
   const accent = ACCENTS[kid];
   const myTasks = taskCatalog.filter((t) => !t.kids || t.kids.length === 0 || t.kids.includes(kid));
@@ -597,10 +828,7 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
   };
 
   return (
-    <div className="mt-6">
-      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
-        Earn coins
-      </h3>
+    <div>
       {myTasks.length === 0 ? (
         <div className="text-xl px-1 mb-3" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
           No tasks set up yet. Ask a parent to add some, or suggest your own below.
@@ -906,7 +1134,7 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   );
 }
 
-function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer }) {
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   const isTest = kid === TEST_KID;
@@ -964,6 +1192,17 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
 
       <DebtCard kid={kid} debit={debit} balance={balance} onPayDown={onPayDownDebt} />
 
+      <TodayPlan
+        kid={kid}
+        plan={dailyPlan}
+        taskCatalog={taskCatalog}
+        taskRequests={taskRequests}
+        onAdd={onAddPlanItem}
+        onToggle={onTogglePlanItem}
+        onRemove={onRemovePlanItem}
+        onRequest={onRequestPlanCoins}
+      />
+
       <TransferSection
         kid={kid}
         balance={balance}
@@ -973,7 +1212,9 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
         onDecline={onDeclineTransfer}
       />
 
-      <TaskBoard kid={kid} taskCatalog={taskCatalog} taskRequests={taskRequests} onRequest={onRequestTask} onRequestCustom={onRequestCustomTask} />
+      <CollapsibleSection storageId={`tasks-${kid}`} title="Task list from Mom" defaultOpen={false}>
+        <TaskBoard kid={kid} taskCatalog={taskCatalog} taskRequests={taskRequests} onRequest={onRequestTask} onRequestCustom={onRequestCustomTask} />
+      </CollapsibleSection>
 
       <BucketSection
         kid={kid}
@@ -2246,6 +2487,66 @@ function CoinBank() {
     });
   }, [setData]);
 
+  const addPlanItem = useCallback((kid, name, coins, taskId) => {
+    setData((prev) => {
+      const item = { id: uid(), name, coins, taskId: taskId || null, date: todayStr(), done: false, requestId: null, ts: Date.now() };
+      return {
+        ...prev,
+        dailyPlans: { ...prev.dailyPlans, [kid]: [...(prev.dailyPlans[kid] || []), item] },
+      };
+    });
+  }, [setData]);
+
+  const togglePlanDone = useCallback((kid, itemId) => {
+    setData((prev) => ({
+      ...prev,
+      dailyPlans: {
+        ...prev.dailyPlans,
+        [kid]: (prev.dailyPlans[kid] || []).map((it) =>
+          it.id === itemId && !it.requestId ? { ...it, done: !it.done } : it
+        ),
+      },
+    }));
+  }, [setData]);
+
+  const removePlanItem = useCallback((kid, itemId) => {
+    setData((prev) => ({
+      ...prev,
+      dailyPlans: {
+        ...prev.dailyPlans,
+        [kid]: (prev.dailyPlans[kid] || []).filter((it) => !(it.id === itemId && !it.requestId)),
+      },
+    }));
+  }, [setData]);
+
+  const requestPlanCoins = useCallback((kid, itemId) => {
+    setData((prev) => {
+      const item = (prev.dailyPlans[kid] || []).find((it) => it.id === itemId);
+      if (!item || !item.done || item.requestId) return prev;
+      const requestId = uid();
+      const request = {
+        id: requestId,
+        kid,
+        taskId: item.taskId,
+        taskName: item.name,
+        coins: item.coins,
+        status: 'pending',
+        custom: !item.taskId,
+        ts: Date.now(),
+      };
+      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: item.name, ts: Date.now() };
+      return {
+        ...prev,
+        taskRequests: [request, ...prev.taskRequests],
+        transactions: [tx, ...prev.transactions],
+        dailyPlans: {
+          ...prev.dailyPlans,
+          [kid]: prev.dailyPlans[kid].map((it) => (it.id === itemId ? { ...it, requestId } : it)),
+        },
+      };
+    });
+  }, [setData]);
+
   const sendTransfer = useCallback((fromKid, toKid, amount, note) => {
     setData((prev) => {
       if (amount <= 0 || amount > prev.balances[fromKid]) return prev;
@@ -2300,6 +2601,7 @@ function CoinBank() {
       taskRequests: prev.taskRequests.filter((r) => r.kid !== TEST_KID),
       debtRequests: prev.debtRequests.filter((r) => r.kid !== TEST_KID),
       transfers: prev.transfers.filter((t) => t.from !== TEST_KID && t.to !== TEST_KID),
+      dailyPlans: { ...prev.dailyPlans, [TEST_KID]: [] },
     }));
   }, [setData]);
 
@@ -2415,6 +2717,11 @@ function CoinBank() {
           onSendTransfer={(toKid, amount, note) => sendTransfer(tab, toKid, amount, note)}
           onAcceptTransfer={(transferId) => acceptTransfer(transferId)}
           onDeclineTransfer={(transferId) => declineTransfer(transferId)}
+          dailyPlan={data.dailyPlans[tab]}
+          onAddPlanItem={(name, coins, taskId) => addPlanItem(tab, name, coins, taskId)}
+          onTogglePlanItem={(itemId) => togglePlanDone(tab, itemId)}
+          onRemovePlanItem={(itemId) => removePlanItem(tab, itemId)}
+          onRequestPlanCoins={(itemId) => requestPlanCoins(tab, itemId)}
         />
       )}
     </div>
