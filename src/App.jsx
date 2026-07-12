@@ -130,6 +130,26 @@ function uid() {
 // To change backends, edit only that file.
 
 // Fill in any missing fields so older saved data (or a partial backup) is safe to load.
+// Keep the stored document from growing forever. The full ledger keeps the
+// most recent entries; pending requests/transfers are always kept, but old
+// resolved (approved/rejected/accepted/declined) ones are capped.
+const HISTORY_LIMIT = 400;
+const RESOLVED_LIMIT = 50;
+
+function pruneData(d) {
+  const keepRecentResolved = (list) => [
+    ...list.filter((r) => r.status === 'pending'),
+    ...list.filter((r) => r.status !== 'pending').slice(0, RESOLVED_LIMIT),
+  ];
+  return {
+    ...d,
+    transactions: d.transactions.slice(0, HISTORY_LIMIT),
+    taskRequests: keepRecentResolved(d.taskRequests),
+    debtRequests: keepRecentResolved(d.debtRequests),
+    transfers: keepRecentResolved(d.transfers),
+  };
+}
+
 function withDefaults(parsed) {
   if (!parsed) return defaultData;
   return {
@@ -306,7 +326,15 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
           <button onClick={() => { setEditing((e) => !e); setEditTarget(String(bucket.target)); }} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
             <Pencil size={18} />
           </button>
-          <button onClick={() => onDelete(bucket.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+          <button
+            onClick={() => {
+              if (window.confirm(`Delete the "${bucket.name}" goal?${bucket.saved > 0 ? ` The ${bucket.saved} saved coins go back to your credit.` : ''}`)) {
+                onDelete(bucket.id);
+              }
+            }}
+            className="p-1.5 -m-1.5"
+            style={{ color: 'var(--text-dim)' }}
+          >
             <Trash2 size={18} />
           </button>
         </div>
@@ -894,7 +922,9 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
-              onClick={onResetTest}
+              onClick={() => {
+                if (window.confirm('Reset the test account? All its test data will be cleared.')) onResetTest();
+              }}
               className="text-base px-2.5 py-1.5 rounded-md"
               style={{ color: accent.c, border: `1px solid ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
             >
@@ -1675,7 +1705,13 @@ function ParentPanel({ data, setData, onOpenTest }) {
                     <button onClick={() => startEditTask(task)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
                       <Pencil size={18} />
                     </button>
-                    <button onClick={() => deleteTask(task.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete the task "${task.name}"?`)) deleteTask(task.id);
+                      }}
+                      className="p-1.5 -m-1.5"
+                      style={{ color: 'var(--text-dim)' }}
+                    >
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -1817,7 +1853,13 @@ function ParentPanel({ data, setData, onOpenTest }) {
                   <button onClick={() => startEditReward(r)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
                     <Pencil size={18} />
                   </button>
-                  <button onClick={() => deleteReward(r.id)} className="p-1.5 -m-1.5" style={{ color: 'var(--text-dim)' }}>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete the reward "${r.name}"?`)) deleteReward(r.id);
+                    }}
+                    className="p-1.5 -m-1.5"
+                    style={{ color: 'var(--text-dim)' }}
+                  >
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -2043,7 +2085,7 @@ function CoinBank() {
   const setData = useCallback((updater) => {
     pendingWrites.current += 1;
     setDataRaw((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const next = pruneData(typeof updater === 'function' ? updater(prev) : updater);
       storageAdapter
         .save(next)
         .then(() => setSyncError(null))
