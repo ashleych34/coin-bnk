@@ -143,6 +143,7 @@ function withDefaults(parsed) {
     taskCatalog: parsed.taskCatalog || defaultData.taskCatalog,
     taskRequests: parsed.taskRequests || [],
     debtRequests: parsed.debtRequests || [],
+    transfers: parsed.transfers || [],
   };
 }
 
@@ -163,6 +164,7 @@ const defaultData = {
   ],
   taskRequests: [],
   debtRequests: [],
+  transfers: [],
 };
 
 function fmtDate(ts) {
@@ -203,6 +205,12 @@ function describeTx(t) {
       return { label: `Declined: ${t.reason}`, amountLabel: '', color: '#E85D75', Icon: ThumbsDown };
     case 'debt_paydown':
       return { label: 'Paid down debt', amountLabel: `-${t.amount}`, color: '#3FA796', Icon: CreditCard };
+    case 'transfer_sent':
+      return { label: `Sent to ${t.toKid}${t.reason ? `: ${t.reason}` : ''}`, amountLabel: `-${t.amount}`, color: '#E85D75', Icon: Send };
+    case 'transfer_received':
+      return { label: `Received from ${t.fromKid}${t.reason ? `: ${t.reason}` : ''}`, amountLabel: `+${t.amount}`, color: '#3FA796', Icon: Gift };
+    case 'transfer_declined':
+      return { label: `${t.toKid} declined${t.reason ? `: ${t.reason}` : ''}`, amountLabel: `+${t.amount} back`, color: 'var(--text-muted)', Icon: ThumbsDown };
     default:
       return {
         label: t.reason || (t.amount >= 0 ? 'Coins added' : 'Coins deducted'),
@@ -651,6 +659,141 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
   );
 }
 
+function TransferSection({ kid, balance, transfers, onSend, onAccept, onDecline }) {
+  const accent = ACCENTS[kid];
+  const [open, setOpen] = useState(false);
+  const [toKid, setToKid] = useState('');
+  const [amt, setAmt] = useState('');
+  const [note, setNote] = useState('');
+
+  // Test account is isolated: it can't send to or receive from real kids.
+  if (kid === TEST_KID) return null;
+
+  const recipients = KIDS.filter((k) => k !== kid);
+  const incoming = transfers.filter((t) => t.to === kid && t.status === 'pending');
+  const outgoing = transfers.filter((t) => t.from === kid && t.status === 'pending');
+
+  const send = () => {
+    const n = parseInt(amt, 10);
+    if (!toKid || !n || n <= 0 || n > balance) return;
+    onSend(toKid, n, note);
+    setAmt('');
+    setNote('');
+    setToKid('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+        Give coins
+      </h3>
+
+      {incoming.map((t) => (
+        <div
+          key={t.id}
+          className="rounded-lg px-3 py-2.5 mb-2"
+          style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-xl" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                {t.from} wants to give you{' '}
+                <span className="font-bold" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>{t.amount}</span>
+                {t.amount === 1 ? ' coin' : ' coins'}
+              </span>
+              {t.note && (
+                <p className="text-lg truncate" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+                  "{t.note}"
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button onClick={() => onAccept(t.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
+                <Check size={20} />
+              </button>
+              <button onClick={() => onDecline(t.id)} className="p-2 rounded-md" style={{ background: 'rgba(232,93,117,0.18)', color: '#E85D75' }}>
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {outgoing.map((t) => (
+        <div
+          key={t.id}
+          className="rounded-lg px-3 py-2.5 mb-2 text-lg"
+          style={{ background: 'var(--surface)', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}
+        >
+          Waiting for {t.to} to accept {t.amount} {t.amount === 1 ? 'coin' : 'coins'}{t.note ? ` — "${t.note}"` : ''}
+        </div>
+      ))}
+
+      {open ? (
+        <div className="rounded-lg p-3" style={{ background: 'var(--surface)', border: `1px solid ${accent.ring}` }}>
+          <div className="flex gap-2 mb-2">
+            {recipients.map((r) => (
+              <button
+                key={r}
+                onClick={() => setToKid(r)}
+                className="flex-1 py-2 rounded-md text-lg"
+                style={{
+                  background: toKid === r ? ACCENTS[r].bg : 'transparent',
+                  border: `1px solid ${toKid === r ? ACCENTS[r].ring : 'var(--border)'}`,
+                  color: toKid === r ? ACCENTS[r].c : 'var(--text-muted)',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                To {r}
+              </button>
+            ))}
+          </div>
+          <input
+            type="number"
+            min="1"
+            max={balance}
+            value={amt}
+            onChange={(e) => setAmt(e.target.value)}
+            placeholder={`Coins (you have ${balance})`}
+            className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
+          />
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="What's it for? (e.g. Made breakfast)"
+            className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
+            style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={send}
+              disabled={!toKid || !amt || parseInt(amt, 10) <= 0 || parseInt(amt, 10) > balance}
+              className="flex-1 py-2 rounded-md text-lg font-semibold disabled:opacity-40 flex items-center justify-center gap-1"
+              style={{ background: accent.c, color: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}
+            >
+              <Send size={16} /> Send
+            </button>
+            <button onClick={() => setOpen(false)} className="px-3 py-2 rounded-md text-lg" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-lg"
+          style={{ color: accent.c, border: `1px dashed ${accent.ring}`, fontFamily: 'Inter, sans-serif' }}
+        >
+          <Send size={16} /> Give coins to {recipients.join(' or ')}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function DebtCard({ kid, debit, balance, onPayDown }) {
   const [open, setOpen] = useState(false);
   const [amt, setAmt] = useState('');
@@ -735,7 +878,7 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   );
 }
 
-function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest }) {
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   const isTest = kid === TEST_KID;
@@ -790,6 +933,15 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
       </div>
 
       <DebtCard kid={kid} debit={debit} balance={balance} onPayDown={onPayDownDebt} />
+
+      <TransferSection
+        kid={kid}
+        balance={balance}
+        transfers={transfers}
+        onSend={onSendTransfer}
+        onAccept={onAcceptTransfer}
+        onDecline={onDeclineTransfer}
+      />
 
       <TaskBoard kid={kid} taskCatalog={taskCatalog} taskRequests={taskRequests} onRequest={onRequestTask} onRequestCustom={onRequestCustomTask} />
 
@@ -2052,6 +2204,50 @@ function CoinBank() {
     });
   }, [setData]);
 
+  const sendTransfer = useCallback((fromKid, toKid, amount, note) => {
+    setData((prev) => {
+      if (amount <= 0 || amount > prev.balances[fromKid]) return prev;
+      // Coins leave the sender immediately (held in escrow) so they can't be
+      // spent twice while the recipient decides. Declining returns them.
+      const transfer = { id: uid(), from: fromKid, to: toKid, amount, note: (note || '').trim(), status: 'pending', ts: Date.now() };
+      const tx = { id: uid(), kid: fromKid, type: 'transfer_sent', amount, toKid, reason: transfer.note, ts: Date.now() };
+      return {
+        ...prev,
+        balances: { ...prev.balances, [fromKid]: prev.balances[fromKid] - amount },
+        transfers: [transfer, ...prev.transfers],
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+  }, [setData]);
+
+  const acceptTransfer = useCallback((transferId) => {
+    setData((prev) => {
+      const tr = prev.transfers.find((t) => t.id === transferId);
+      if (!tr || tr.status !== 'pending') return prev;
+      const tx = { id: uid(), kid: tr.to, type: 'transfer_received', amount: tr.amount, fromKid: tr.from, reason: tr.note, ts: Date.now() };
+      return {
+        ...prev,
+        balances: { ...prev.balances, [tr.to]: prev.balances[tr.to] + tr.amount },
+        transfers: prev.transfers.map((t) => (t.id === transferId ? { ...t, status: 'accepted' } : t)),
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+  }, [setData]);
+
+  const declineTransfer = useCallback((transferId) => {
+    setData((prev) => {
+      const tr = prev.transfers.find((t) => t.id === transferId);
+      if (!tr || tr.status !== 'pending') return prev;
+      const tx = { id: uid(), kid: tr.from, type: 'transfer_declined', amount: tr.amount, toKid: tr.to, reason: tr.note, ts: Date.now() };
+      return {
+        ...prev,
+        balances: { ...prev.balances, [tr.from]: prev.balances[tr.from] + tr.amount },
+        transfers: prev.transfers.map((t) => (t.id === transferId ? { ...t, status: 'declined' } : t)),
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+  }, [setData]);
+
   const resetTestAccount = useCallback(() => {
     setData((prev) => ({
       ...prev,
@@ -2061,6 +2257,7 @@ function CoinBank() {
       transactions: prev.transactions.filter((t) => t.kid !== TEST_KID),
       taskRequests: prev.taskRequests.filter((r) => r.kid !== TEST_KID),
       debtRequests: prev.debtRequests.filter((r) => r.kid !== TEST_KID),
+      transfers: prev.transfers.filter((t) => t.from !== TEST_KID && t.to !== TEST_KID),
     }));
   }, [setData]);
 
@@ -2105,6 +2302,9 @@ function CoinBank() {
             data.taskRequests.filter((r) => r.status === 'pending').length +
             KIDS.reduce((sum, k) => sum + (data.buckets[k] || []).filter((b) => b.claimPending).length, 0) +
             data.debtRequests.filter((r) => r.status === 'pending').length;
+          const incomingCount = t !== 'Parent'
+            ? data.transfers.filter((tr) => tr.to === t && tr.status === 'pending').length
+            : 0;
           return (
           <button
             key={t}
@@ -2125,6 +2325,14 @@ function CoinBank() {
                 style={{ background: '#E85D75', color: '#fff' }}
               >
                 {pendingCount}
+              </span>
+            )}
+            {incomingCount > 0 && (
+              <span
+                className="absolute -top-1.5 -right-1.5 text-base font-bold rounded-full w-6 h-6 flex items-center justify-center"
+                style={{ background: 'var(--gold)', color: 'var(--text-on-gold)' }}
+              >
+                {incomingCount}
               </span>
             )}
           </button>
@@ -2161,6 +2369,10 @@ function CoinBank() {
           onPayDownDebt={(amount) => payDownDebt(tab, amount)}
           onBack={() => setTab('Parent')}
           onResetTest={resetTestAccount}
+          transfers={data.transfers}
+          onSendTransfer={(toKid, amount, note) => sendTransfer(tab, toKid, amount, note)}
+          onAcceptTransfer={(transferId) => acceptTransfer(transferId)}
+          onDeclineTransfer={(transferId) => declineTransfer(transferId)}
         />
       )}
     </div>
