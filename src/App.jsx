@@ -175,6 +175,7 @@ function withDefaults(parsed) {
     debtRequests: parsed.debtRequests || [],
     transfers: parsed.transfers || [],
     dailyPlans: { Ryan: [], Emma: [], Test: [], ...(parsed.dailyPlans || {}) },
+    kidPins: { Ryan: '', Emma: '', Test: '', ...(parsed.kidPins || {}) },
   };
 }
 
@@ -197,6 +198,7 @@ const defaultData = {
   debtRequests: [],
   transfers: [],
   dailyPlans: { Ryan: [], Emma: [], Test: [] },
+  kidPins: { Ryan: '', Emma: '', Test: '' },
 };
 
 function fmtDate(ts) {
@@ -1134,10 +1136,39 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   );
 }
 
-function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins }) {
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins, kidPin, onSetPin }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   const isTest = kid === TEST_KID;
+  const [unlocked, setUnlocked] = useState(!kidPin);
+  const [showPinChange, setShowPinChange] = useState(false);
+  const [newPin, setNewPin] = useState('');
+
+  if (!isTest && !unlocked) {
+    return (
+      <div className="max-w-xs mx-auto pt-6 text-center">
+        <p className="text-xl mb-4" style={{ color: accent.c, fontFamily: 'Inter, sans-serif' }}>
+          {kid}'s account is locked
+        </p>
+        <PinGate pin={kidPin} onUnlock={() => setUnlocked(true)} />
+      </div>
+    );
+  }
+
+  const savePin = () => {
+    if (newPin.length !== 4) return;
+    onSetPin(newPin);
+    setNewPin('');
+    setShowPinChange(false);
+  };
+
+  const removePin = () => {
+    if (window.confirm('Remove your PIN? Anyone will be able to open your account until you set a new one.')) {
+      onSetPin('');
+      setShowPinChange(false);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto">
       {isTest && (
@@ -1166,6 +1197,52 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
               ← Parent
             </button>
           </div>
+        </div>
+      )}
+      {!isTest && (
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setShowPinChange((s) => !s)}
+            className="flex items-center gap-1.5 text-base px-2.5 py-1.5 rounded-md"
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif' }}
+          >
+            <Lock size={14} /> {kidPin ? 'Change my PIN' : 'Set a PIN'}
+          </button>
+        </div>
+      )}
+      {showPinChange && (
+        <div className="mb-4 rounded-lg p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p className="text-base mb-2" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+            {kidPin ? 'Choose a new 4-digit PIN. Only you should know it!' : 'Choose a 4-digit PIN so only you can open your account.'}
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+              placeholder="4-digit PIN"
+              className="flex-1 rounded-md px-2.5 py-2 text-xl outline-none"
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
+            />
+            <button
+              onClick={savePin}
+              disabled={newPin.length !== 4}
+              className="text-lg px-3 py-2 rounded-md disabled:opacity-40"
+              style={{ background: accent.c, color: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}
+            >
+              Save
+            </button>
+            <button onClick={() => setShowPinChange(false)} className="p-2 -m-1" style={{ color: 'var(--text-dim)' }}>
+              <X size={18} />
+            </button>
+          </div>
+          {kidPin && (
+            <button onClick={removePin} className="text-base mt-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+              Remove my PIN
+            </button>
+          )}
         </div>
       )}
       <div
@@ -1682,6 +1759,46 @@ function ParentPanel({ data, setData, onOpenTest }) {
       >
         🧪 Open Test Account (safe to play with)
       </button>
+
+      <div className="mb-6">
+        <h3 className="text-lg uppercase tracking-[0.2em] mb-3 px-1" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+          Kids' PINs
+        </h3>
+        {KIDS.map((kid) => (
+          <div
+            key={kid}
+            className="flex items-center justify-between rounded-lg px-3 py-2.5 mb-2"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <div className="flex items-center gap-2">
+              <Lock size={16} style={{ color: data.kidPins[kid] ? ACCENTS[kid].c : 'var(--text-dim)' }} />
+              <span className="text-xl" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                {kid}
+              </span>
+              <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                {data.kidPins[kid] ? 'PIN set' : 'No PIN'}
+              </span>
+            </div>
+            {data.kidPins[kid] && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`Reset ${kid}'s PIN? They'll need to set a new one, and their account will be unlocked until they do.`)) {
+                    setData((prev) => ({ ...prev, kidPins: { ...prev.kidPins, [kid]: '' } }));
+                    flashToast(`${kid}'s PIN was reset`);
+                  }
+                }}
+                className="text-base px-2.5 py-1.5 rounded-md"
+                style={{ color: 'var(--text-muted)', border: '1px solid var(--border)', fontFamily: 'Inter, sans-serif' }}
+              >
+                Forgot it? Reset
+              </button>
+            )}
+          </div>
+        ))}
+        <p className="text-base px-1" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+          Kids can set their own PIN from their account to keep it private from each other. You can always reset it here if they forget.
+        </p>
+      </div>
 
       {showPinChange && (
         <div className="mb-4 rounded-lg p-3 flex items-center gap-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -2519,6 +2636,10 @@ function CoinBank() {
     }));
   }, [setData]);
 
+  const setKidPin = useCallback((kid, pin) => {
+    setData((prev) => ({ ...prev, kidPins: { ...prev.kidPins, [kid]: pin } }));
+  }, [setData]);
+
   const requestPlanCoins = useCallback((kid, itemId) => {
     setData((prev) => {
       const item = (prev.dailyPlans[kid] || []).find((it) => it.id === itemId);
@@ -2722,6 +2843,8 @@ function CoinBank() {
           onTogglePlanItem={(itemId) => togglePlanDone(tab, itemId)}
           onRemovePlanItem={(itemId) => removePlanItem(tab, itemId)}
           onRequestPlanCoins={(itemId) => requestPlanCoins(tab, itemId)}
+          kidPin={data.kidPins[tab]}
+          onSetPin={(pin) => setKidPin(tab, pin)}
         />
       )}
     </div>
