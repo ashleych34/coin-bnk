@@ -1738,26 +1738,26 @@ function ParentPanel({ data, setData, onOpenTest }) {
             {pendingRequests.map((req) => (
               <li
                 key={req.id}
-                className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
+                className="rounded-lg px-3 py-3"
                 style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span
                     className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
                   >
                     {req.kid}
                   </span>
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}>
                     {req.taskName}
                   </span>
                   {req.custom && (
-                    <span className="text-base flex-shrink-0 px-1 rounded" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}>
+                    <span className="text-base flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: 'var(--border)', color: 'var(--text-muted)' }}>
                       suggested
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center justify-end gap-1.5">
                   <input
                     type="number"
                     min="0"
@@ -1778,10 +1778,10 @@ function ParentPanel({ data, setData, onOpenTest }) {
             {pendingClaims.map(({ kid, bucket }) => (
               <li
                 key={`claim-${bucket.id}`}
-                className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
+                className="rounded-lg px-3 py-3"
                 style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span
                     className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[kid].bg, color: ACCENTS[kid].c }}
@@ -1789,14 +1789,14 @@ function ParentPanel({ data, setData, onOpenTest }) {
                     {kid}
                   </span>
                   <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}>
                     {bucket.name}
                   </span>
                   <span className="text-lg flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
                     {bucket.saved} coins
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center justify-end gap-1.5">
                   <button onClick={() => approveClaim(kid, bucket.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
                     <Check size={20} />
                   </button>
@@ -1809,10 +1809,10 @@ function ParentPanel({ data, setData, onOpenTest }) {
             {pendingDebts.map((req) => (
               <li
                 key={`debt-${req.id}`}
-                className="flex items-center justify-between rounded-lg px-3 py-3 gap-2"
+                className="rounded-lg px-3 py-3"
                 style={{ background: 'rgba(232,93,117,0.1)', border: '1px solid #E85D75' }}
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span
                     className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
@@ -1820,14 +1820,14 @@ function ParentPanel({ data, setData, onOpenTest }) {
                     {req.kid}
                   </span>
                   <CreditCard size={18} style={{ color: '#E85D75', flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}>
                     {req.rewardName}
                   </span>
                   <span className="text-lg flex-shrink-0" style={{ color: '#E85D75', fontFamily: "'JetBrains Mono', monospace" }}>
                     cost {req.cost}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center justify-end gap-1.5">
                   <button onClick={() => approveDebt(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
                     <Check size={20} />
                   </button>
