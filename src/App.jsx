@@ -1533,6 +1533,39 @@ function ParentPanel({ data, setData, onOpenTest }) {
     flashToast('Advance declined');
   };
 
+  // Declined requests are kept (status: 'rejected'), so accidental declines
+  // can be flipped back to pending and approved properly.
+  const recentlyDeclinedTasks = data.taskRequests.filter((r) => r.status === 'rejected').slice(0, 10);
+  const recentlyDeclinedDebts = data.debtRequests.filter((r) => r.status === 'rejected').slice(0, 10);
+
+  const restoreTaskRequest = (requestId) => {
+    setData((prev) => {
+      const req = prev.taskRequests.find((r) => r.id === requestId);
+      if (!req || req.status !== 'rejected') return prev;
+      const tx = { id: uid(), kid: req.kid, type: 'task_request', amount: 0, reason: `${req.taskName} (restored)`, ts: Date.now() };
+      return {
+        ...prev,
+        taskRequests: prev.taskRequests.map((r) => (r.id === requestId ? { ...r, status: 'pending' } : r)),
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+    flashToast('Request restored to pending');
+  };
+
+  const restoreDebtRequest = (requestId) => {
+    setData((prev) => {
+      const req = prev.debtRequests.find((r) => r.id === requestId);
+      if (!req || req.status !== 'rejected') return prev;
+      const tx = { id: uid(), kid: req.kid, type: 'debt_request', amount: 0, reason: `${req.rewardName} (restored)`, ts: Date.now() };
+      return {
+        ...prev,
+        debtRequests: prev.debtRequests.map((r) => (r.id === requestId ? { ...r, status: 'pending' } : r)),
+        transactions: [tx, ...prev.transactions],
+      };
+    });
+    flashToast('Request restored to pending');
+  };
+
   const approveRequest = (requestId) => {
     setData((prev) => {
       const req = prev.taskRequests.find((r) => r.id === requestId);
@@ -1974,6 +2007,81 @@ function ParentPanel({ data, setData, onOpenTest }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {(recentlyDeclinedTasks.length > 0 || recentlyDeclinedDebts.length > 0) && (
+        <div className="mb-6">
+          <CollapsibleSection
+            storageId="recently-declined"
+            title={`Recently declined (${recentlyDeclinedTasks.length + recentlyDeclinedDebts.length})`}
+            defaultOpen={false}
+          >
+            <p className="text-base px-1 mb-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+              Declined by mistake? Restore puts it back in pending so you can approve it.
+            </p>
+            <ul className="space-y-2">
+              {recentlyDeclinedTasks.map((req) => (
+                <li
+                  key={`declined-${req.id}`}
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 gap-2"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span
+                      className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                      style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
+                    >
+                      {req.kid}
+                    </span>
+                    <span className="text-lg" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}>
+                      {req.taskName}
+                    </span>
+                    <span className="text-base flex-shrink-0" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                      {fmtDate(req.ts)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => restoreTaskRequest(req.id)}
+                    className="text-base px-2.5 py-1.5 rounded-md flex-shrink-0"
+                    style={{ color: GOLD, border: `1px solid ${GOLD}`, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Restore
+                  </button>
+                </li>
+              ))}
+              {recentlyDeclinedDebts.map((req) => (
+                <li
+                  key={`declined-debt-${req.id}`}
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 gap-2"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span
+                      className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                      style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
+                    >
+                      {req.kid}
+                    </span>
+                    <CreditCard size={16} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
+                    <span className="text-lg" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}>
+                      {req.rewardName} · cost {req.cost}
+                    </span>
+                    <span className="text-base flex-shrink-0" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                      {fmtDate(req.ts)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => restoreDebtRequest(req.id)}
+                    className="text-base px-2.5 py-1.5 rounded-md flex-shrink-0"
+                    style={{ color: GOLD, border: `1px solid ${GOLD}`, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Restore
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </CollapsibleSection>
         </div>
       )}
 
