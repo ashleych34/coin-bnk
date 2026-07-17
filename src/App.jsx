@@ -775,10 +775,11 @@ function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRe
             style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
           />
           <input
-            type="number"
-            min="1"
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
             value={customCoins}
-            onChange={(e) => setCustomCoins(e.target.value)}
+            onChange={(e) => setCustomCoins(e.target.value.replace(/\D/g, '').slice(0, 4))}
             placeholder="Coins it's worth"
             className="w-full mb-2 rounded-md px-2 py-2 text-xl outline-none"
             style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
@@ -887,10 +888,11 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
             style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
           />
           <input
-            type="number"
-            min="1"
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
             value={customCoins}
-            onChange={(e) => setCustomCoins(e.target.value)}
+            onChange={(e) => setCustomCoins(e.target.value.replace(/\D/g, '').slice(0, 4))}
             placeholder="Coins you think it's worth"
             className="w-full mb-2 rounded-md px-2.5 py-2 text-xl outline-none"
             style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
@@ -1450,8 +1452,13 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setTimeout(() => setToast(''), 1600);
   };
 
+  const MAX_COINS = 9999;
   const [reqEdits, setReqEdits] = useState({});
-  const getReqCoins = (req) => (reqEdits[req.id] !== undefined ? reqEdits[req.id] : req.coins);
+  const getReqCoins = (req) => {
+    const raw = reqEdits[req.id] !== undefined ? reqEdits[req.id] : req.coins;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? Math.min(Math.max(n, 0), MAX_COINS) : 0;
+  };
   const setReqCoins = (reqId, val) => setReqEdits((prev) => ({ ...prev, [reqId]: val }));
 
   const pendingRequests = data.taskRequests.filter((r) => r.status === 'pending');
@@ -1530,7 +1537,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const req = prev.taskRequests.find((r) => r.id === requestId);
       if (!req || req.status !== 'pending') return prev;
-      const finalCoins = parseInt(getReqCoins(req), 10) || req.coins;
+      const finalCoins = getReqCoins(req);
       const tx = { id: uid(), kid: req.kid, type: 'task_approved', amount: finalCoins, reason: req.taskName, ts: Date.now() };
       return {
         ...prev,
@@ -1858,7 +1865,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
                 className="rounded-lg px-3 py-3"
                 style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
               >
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span
                     className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
@@ -1874,12 +1881,16 @@ function ParentPanel({ data, setData, onOpenTest }) {
                     </span>
                   )}
                 </div>
+                <div className="text-base mb-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                  Asked {fmtDate(req.ts)}
+                </div>
                 <div className="flex items-center justify-end gap-1.5">
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
                     value={getReqCoins(req)}
-                    onChange={(e) => setReqCoins(req.id, e.target.value)}
+                    onChange={(e) => setReqCoins(req.id, e.target.value.replace(/\D/g, '').slice(0, 4))}
                     className="w-16 text-center rounded-md py-1.5 text-lg outline-none"
                     style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
                   />
@@ -1898,7 +1909,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
                 className="rounded-lg px-3 py-3"
                 style={{ background: 'rgba(var(--gold-rgb), 0.1)', border: `1px solid ${GOLD}` }}
               >
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span
                     className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[kid].bg, color: ACCENTS[kid].c }}
@@ -1913,6 +1924,11 @@ function ParentPanel({ data, setData, onOpenTest }) {
                     {bucket.saved} coins
                   </span>
                 </div>
+                {bucket.claimRequestedAt && (
+                  <div className="text-base mb-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                    Asked {fmtDate(bucket.claimRequestedAt)}
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-1.5">
                   <button onClick={() => approveClaim(kid, bucket.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
                     <Check size={20} />
@@ -1929,7 +1945,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
                 className="rounded-lg px-3 py-3"
                 style={{ background: 'rgba(232,93,117,0.1)', border: '1px solid #E85D75' }}
               >
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span
                     className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: ACCENTS[req.kid].bg, color: ACCENTS[req.kid].c }}
@@ -1943,6 +1959,9 @@ function ParentPanel({ data, setData, onOpenTest }) {
                   <span className="text-lg flex-shrink-0" style={{ color: '#E85D75', fontFamily: "'JetBrains Mono', monospace" }}>
                     cost {req.cost}
                   </span>
+                </div>
+                <div className="text-base mb-2" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                  Asked {fmtDate(req.ts)}
                 </div>
                 <div className="flex items-center justify-end gap-1.5">
                   <button onClick={() => approveDebt(req.id)} className="p-2 rounded-md" style={{ background: 'rgba(63,167,150,0.18)', color: '#3FA796' }}>
@@ -2510,7 +2529,7 @@ function CoinBank() {
         ...prev,
         buckets: {
           ...prev.buckets,
-          [kid]: prev.buckets[kid].map((b) => (b.id === bucketId ? { ...b, claimPending: true } : b)),
+          [kid]: prev.buckets[kid].map((b) => (b.id === bucketId ? { ...b, claimPending: true, claimRequestedAt: Date.now() } : b)),
         },
         transactions: [tx, ...prev.transactions],
       };
