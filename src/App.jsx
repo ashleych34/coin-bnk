@@ -1143,6 +1143,12 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   const isTest = kid === TEST_KID;
   const [unlocked, setUnlocked] = useState(!kidPin);
+
+  // If the parent resets this kid's PIN while their tab is open at the lock
+  // screen, unlock automatically instead of leaving them stuck.
+  useEffect(() => {
+    if (!kidPin) setUnlocked(true);
+  }, [kidPin]);
   const [showPinChange, setShowPinChange] = useState(false);
   const [newPin, setNewPin] = useState('');
 
@@ -2940,6 +2946,7 @@ function CoinBank() {
         <ParentPanel data={data} setData={setData} onOpenTest={() => setTab(TEST_KID)} />
       ) : (
         <KidPassbook
+          key={tab}
           kid={tab}
           balance={data.balances[tab]}
           transactions={data.transactions}
