@@ -1138,7 +1138,7 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   );
 }
 
-function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins, kidPin, onSetPin }) {
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins, kidPin, onSetPin, parentPin }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   const isTest = kid === TEST_KID;
@@ -1158,7 +1158,7 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
         <p className="text-xl mb-4" style={{ color: accent.c, fontFamily: 'Inter, sans-serif' }}>
           {kid}'s account is locked
         </p>
-        <PinGate pin={kidPin} onUnlock={() => setUnlocked(true)} />
+        <PinGate pin={kidPin} masterPin={parentPin} onUnlock={() => setUnlocked(true)} />
       </div>
     );
   }
@@ -1366,12 +1366,14 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
   );
 }
 
-function PinGate({ pin, onUnlock }) {
+function PinGate({ pin, masterPin, onUnlock }) {
   const [entry, setEntry] = useState('');
   const [error, setError] = useState(false);
 
+  const matches = (value) => value === pin || (masterPin && value === masterPin);
+
   const submit = () => {
-    if (entry === pin) {
+    if (matches(entry)) {
       onUnlock();
     } else {
       setError(true);
@@ -1386,7 +1388,7 @@ function PinGate({ pin, onUnlock }) {
     setEntry(next);
     if (next.length === 4) {
       setTimeout(() => {
-        if (next === pin) onUnlock();
+        if (matches(next)) onUnlock();
         else {
           setError(true);
           setEntry('');
@@ -2979,6 +2981,7 @@ function CoinBank() {
           onRequestPlanCoins={(itemId) => requestPlanCoins(tab, itemId)}
           kidPin={data.kidPins[tab]}
           onSetPin={(pin) => setKidPin(tab, pin)}
+          parentPin={data.pin}
         />
       )}
     </div>

@@ -160,8 +160,16 @@ Keep any new request-like or day-scoped arrays consistent with this pattern.
   "Change my PIN"). Empty string = no PIN = tab opens directly (this is the
   default/backward-compatible state). Gate logic lives inside `KidPassbook`
   itself (`unlocked` state initialized from `!kidPin`), reusing the same
-  `PinGate` component the Parent tab uses. **The Test account never has a
-  PIN gate** — `isTest` skips it entirely. **Safety valve:** Parent panel has
+  `PinGate` component the Parent tab uses. **The Parent PIN is a master key:**
+  `PinGate` accepts an optional `masterPin` prop and kid gates receive
+  `data.pin`, so the parent can open any kid's locked tab with her own PIN.
+  **`KidPassbook` is rendered with `key={tab}`** — this is load-bearing:
+  without it React reuses the instance across tab switches and the unlocked
+  state leaks from one kid to the other (a real shipped bug, reported by
+  Ryan). An effect also auto-unlocks if `kidPin` becomes empty while mounted
+  (parent reset the PIN remotely while the kid sat at the lock screen).
+  **The Test account never has a PIN gate** — `isTest` skips it entirely.
+  **Safety valve:** Parent panel has
   a "Kids' PINs" section with a confirm-guarded "Forgot it? Reset" button per
   kid that clears their PIN back to `''`, so a kid can never be permanently
   locked out of their own account.
