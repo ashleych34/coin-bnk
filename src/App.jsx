@@ -376,7 +376,7 @@ function BucketRow({ kid, bucket, balance, onDeposit, onWithdraw, onClaim, onDel
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <Target size={19} style={{ color: accent.c, flexShrink: 0 }} />
-          <span className="text-xl font-medium truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+          <span className="text-xl font-medium" style={{ wordBreak: 'break-word', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
             {bucket.name}
           </span>
         </div>
@@ -555,7 +555,7 @@ function BucketSection({ kid, balance, buckets, onAdd, onDeposit, onWithdraw, on
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Gift size={18} style={{ color: GOLD, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl" style={{ wordBreak: 'break-word', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {r.name}
                   </span>
                   <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -751,7 +751,7 @@ function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRe
                 </button>
                 <div className="min-w-0">
                   <span
-                    className="text-xl block truncate"
+                    className="text-xl block"
                     style={{
                       color: item.done ? accent.c : 'var(--text-primary)',
                       textDecoration: item.done && status ? 'none' : item.done ? 'line-through' : 'none',
@@ -921,7 +921,7 @@ function TaskBoard({ kid, taskCatalog, taskRequests, onRequest, onRequestCustom 
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <ClipboardList size={20} style={{ color: accent.c, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl" style={{ wordBreak: 'break-word', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {task.name}
                   </span>
                   <span
@@ -1036,7 +1036,7 @@ function TransferSection({ kid, balance, transfers, onSend, onAccept, onDecline 
                 {t.amount === 1 ? ' coin' : ' coins'}
               </span>
               {t.note && (
-                <p className="text-lg truncate" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+                <p className="text-lg" style={{ wordBreak: 'break-word', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
                   "{t.note}"
                 </p>
               )}
@@ -1408,34 +1408,31 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
               return (
                 <li
                   key={t.id}
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5"
+                  className="rounded-lg px-3 py-2.5"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Icon size={21} style={{ color, flexShrink: 0 }} />
-                    <div className="min-w-0">
-                      <span className="text-xl block truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
-                        {label}
-                      </span>
-                      {t.requestedAt && (
-                        <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
-                          asked {fmtDate(t.requestedAt)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end flex-shrink-0 pl-2">
+                  <div className="flex items-start gap-2 mb-1">
+                    <Icon size={21} style={{ color, flexShrink: 0, marginTop: 2 }} />
+                    <span
+                      className="text-xl flex-1"
+                      style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}
+                    >
+                      {label}
+                    </span>
                     {amountLabel && (
                       <span
-                        className="text-xl font-semibold tabular-nums"
+                        className="text-xl font-semibold tabular-nums flex-shrink-0"
                         style={{ color, fontFamily: "'JetBrains Mono', monospace" }}
                       >
                         {amountLabel}
                       </span>
                     )}
-                    <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
-                      {fmtDate(t.ts)}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                    <span style={{ wordBreak: 'break-word' }}>
+                      {t.requestedAt ? `asked ${fmtDate(t.requestedAt)}` : ''}
                     </span>
+                    <span className="flex-shrink-0">{fmtDate(t.ts)}</span>
                   </div>
                 </li>
               );
@@ -2265,7 +2262,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <ClipboardList size={19} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                    <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                    <span className="text-xl" style={{ wordBreak: 'break-word', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                       {task.name}
                     </span>
                     <span className="text-lg flex-shrink-0" style={{ color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -2416,7 +2413,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Gift size={19} style={{ color: GOLD, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-xl" style={{ wordBreak: 'break-word', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
                     {r.name}
                   </span>
                   <span className="text-lg flex-shrink-0" style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -2533,40 +2530,37 @@ function ParentPanel({ data, setData, onOpenTest }) {
                   return (
                     <li
                       key={t.id}
-                      className="flex items-center justify-between rounded-lg px-3 py-2.5"
+                      className="rounded-lg px-3 py-2.5"
                       style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-start gap-2 mb-1">
                         <span
                           className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
                           style={{ background: ACCENTS[t.kid].bg, color: ACCENTS[t.kid].c }}
                         >
                           {t.kid}
                         </span>
-                        <Icon size={19} style={{ color, flexShrink: 0 }} />
-                        <div className="min-w-0">
-                          <span className="text-xl block truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
-                            {label}
-                          </span>
-                          {t.requestedAt && (
-                            <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
-                              asked {fmtDate(t.requestedAt)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end flex-shrink-0 pl-2">
+                        <Icon size={19} style={{ color, flexShrink: 0, marginTop: 2 }} />
+                        <span
+                          className="text-xl flex-1"
+                          style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', wordBreak: 'break-word' }}
+                        >
+                          {label}
+                        </span>
                         {amountLabel && (
                           <span
-                            className="text-xl font-semibold tabular-nums"
+                            className="text-xl font-semibold tabular-nums flex-shrink-0"
                             style={{ color, fontFamily: "'JetBrains Mono', monospace" }}
                           >
                             {amountLabel}
                           </span>
                         )}
-                        <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
-                          {fmtTime(t.ts)}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                        <span style={{ wordBreak: 'break-word' }}>
+                          {t.requestedAt ? `asked ${fmtDate(t.requestedAt)}` : ''}
                         </span>
+                        <span className="flex-shrink-0">{fmtTime(t.ts)}</span>
                       </div>
                     </li>
                   );
