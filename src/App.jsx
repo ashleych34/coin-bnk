@@ -142,6 +142,14 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Plan items carry the day the work was actually done, shown in the title
+// as "Name | YYYY-MM-DD" so the parent sees it on the request too.
+// Older items (saved before forDate existed) fall back to their plan date.
+function planItemLabel(item) {
+  const d = item.forDate || item.date;
+  return d ? `${item.name} | ${d}` : item.name;
+}
+
 function pruneData(d) {
   const keepRecentResolved = (list) => [
     ...list.filter((r) => r.status === 'pending'),
@@ -667,9 +675,10 @@ function CollapsibleSection({ storageId, title, accentColor, defaultOpen = false
   );
 }
 
-function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRemove, onRequest }) {
+function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRemove, onRequest, onSetDate }) {
   const accent = ACCENTS[kid];
   const [adding, setAdding] = useState(false);
+  const [editingDateId, setEditingDateId] = useState(null);
   const [customName, setCustomName] = useState('');
   const [customCoins, setCustomCoins] = useState('');
 
@@ -740,16 +749,41 @@ function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRe
                 >
                   {item.done ? <CheckCircle2 size={26} /> : <Circle size={26} />}
                 </button>
-                <span
-                  className="text-xl truncate"
-                  style={{
-                    color: item.done ? accent.c : 'var(--text-primary)',
-                    textDecoration: item.done && status ? 'none' : item.done ? 'line-through' : 'none',
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  {item.name}
-                </span>
+                <div className="min-w-0">
+                  <span
+                    className="text-xl block truncate"
+                    style={{
+                      color: item.done ? accent.c : 'var(--text-primary)',
+                      textDecoration: item.done && status ? 'none' : item.done ? 'line-through' : 'none',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    {item.name}
+                  </span>
+                  {item.requestId ? (
+                    <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: "'JetBrains Mono', monospace" }}>
+                      | {item.forDate || item.date}
+                    </span>
+                  ) : editingDateId === item.id ? (
+                    <input
+                      type="date"
+                      autoFocus
+                      value={item.forDate || item.date || todayStr()}
+                      onChange={(e) => e.target.value && onSetDate(item.id, e.target.value)}
+                      onBlur={() => setEditingDateId(null)}
+                      className="mt-1 rounded-md px-2 py-1 text-base outline-none"
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setEditingDateId(item.id)}
+                      className="text-base block"
+                      style={{ color: 'var(--text-dim)', fontFamily: "'JetBrains Mono', monospace", textDecoration: 'underline dotted' }}
+                    >
+                      | {item.forDate || item.date}
+                    </button>
+                  )}
+                </div>
                 <span
                   className="text-base flex-shrink-0 px-2 py-0.5 rounded"
                   style={{ background: 'rgba(var(--gold-rgb), 0.14)', color: GOLD, fontFamily: "'JetBrains Mono', monospace" }}
@@ -1177,7 +1211,7 @@ function DebtCard({ kid, debit, balance, onPayDown }) {
   );
 }
 
-function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins, kidPin, onSetPin, parentPin }) {
+function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, onDeposit, onWithdraw, onClaim, onDeleteBucket, onEditBucket, taskCatalog, taskRequests, onRequestTask, onRequestCustomTask, rewardCatalog, debtRequests, onRequestAdvance, onPayDownDebt, onBack, onResetTest, transfers, onSendTransfer, onAcceptTransfer, onDeclineTransfer, dailyPlan, onAddPlanItem, onTogglePlanItem, onRemovePlanItem, onRequestPlanCoins, onSetPlanItemDate, kidPin, onSetPin, parentPin }) {
   const accent = ACCENTS[kid];
   const kidTx = transactions.filter((t) => t.kid === kid).slice(0, 8);
   const isTest = kid === TEST_KID;
@@ -1325,6 +1359,7 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
         onToggle={onTogglePlanItem}
         onRemove={onRemovePlanItem}
         onRequest={onRequestPlanCoins}
+        onSetDate={onSetPlanItemDate}
       />
 
       <TransferSection
@@ -2806,7 +2841,7 @@ function CoinBank() {
 
   const addPlanItem = useCallback((kid, name, coins, taskId) => {
     setData((prev) => {
-      const item = { id: uid(), name, coins, taskId: taskId || null, date: todayStr(), done: false, requestId: null, ts: Date.now() };
+      const item = { id: uid(), name, coins, taskId: taskId || null, date: todayStr(), forDate: todayStr(), done: false, requestId: null, ts: Date.now() };
       return {
         ...prev,
         dailyPlans: { ...prev.dailyPlans, [kid]: [...(prev.dailyPlans[kid] || []), item] },
@@ -2836,6 +2871,18 @@ function CoinBank() {
     }));
   }, [setData]);
 
+  const setPlanItemDate = useCallback((kid, itemId, forDate) => {
+    setData((prev) => ({
+      ...prev,
+      dailyPlans: {
+        ...prev.dailyPlans,
+        [kid]: (prev.dailyPlans[kid] || []).map((it) =>
+          it.id === itemId && !it.requestId ? { ...it, forDate } : it
+        ),
+      },
+    }));
+  }, [setData]);
+
   const setKidPin = useCallback((kid, pin) => {
     setData((prev) => ({ ...prev, kidPins: { ...prev.kidPins, [kid]: pin } }));
   }, [setData]);
@@ -2849,13 +2896,13 @@ function CoinBank() {
         id: requestId,
         kid,
         taskId: item.taskId,
-        taskName: item.name,
+        taskName: planItemLabel(item),
         coins: item.coins,
         status: 'pending',
         custom: !item.taskId,
         ts: Date.now(),
       };
-      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: item.name, reqId: requestId, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: planItemLabel(item), reqId: requestId, ts: Date.now() };
       return {
         ...prev,
         taskRequests: [request, ...prev.taskRequests],
@@ -3044,6 +3091,7 @@ function CoinBank() {
           onTogglePlanItem={(itemId) => togglePlanDone(tab, itemId)}
           onRemovePlanItem={(itemId) => removePlanItem(tab, itemId)}
           onRequestPlanCoins={(itemId) => requestPlanCoins(tab, itemId)}
+          onSetPlanItemDate={(itemId, forDate) => setPlanItemDate(tab, itemId, forDate)}
           kidPin={data.kidPins[tab]}
           onSetPin={(pin) => setKidPin(tab, pin)}
           parentPin={data.pin}
