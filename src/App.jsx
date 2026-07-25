@@ -207,6 +207,14 @@ function fmtDate(ts) {
     d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
+// When a request is approved/declined, its standalone "Requested:" ledger
+// entry becomes redundant — the resolution entry carries both the request
+// time and the decision time. Drop it so the ledger doesn't show confusing
+// near-duplicate pairs.
+function dropRequestTx(transactions, reqId) {
+  return transactions.filter((t) => t.reqId !== reqId);
+}
+
 function describeTx(t) {
   switch (t.type) {
     case 'bucket_create':
@@ -1339,9 +1347,16 @@ function KidPassbook({ kid, balance, debit, transactions, buckets, onAddBucket, 
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Icon size={21} style={{ color, flexShrink: 0 }} />
-                    <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
-                      {label}
-                    </span>
+                    <div className="min-w-0">
+                      <span className="text-xl block truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                        {label}
+                      </span>
+                      {t.requestedAt && (
+                        <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                          asked {fmtDate(t.requestedAt)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col items-end flex-shrink-0 pl-2">
                     {amountLabel && (
@@ -1479,7 +1494,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const bucket = prev.buckets[kid].find((b) => b.id === bucketId);
       if (!bucket || !bucket.claimPending) return prev;
-      const tx = { id: uid(), kid, type: 'bucket_claim', amount: bucket.saved, reason: bucket.name, bucketName: bucket.name, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'bucket_claim', amount: bucket.saved, reason: bucket.name, bucketName: bucket.name, requestedAt: bucket.claimRequestedAt, ts: Date.now() };
       return {
         ...prev,
         buckets: { ...prev.buckets, [kid]: prev.buckets[kid].filter((b) => b.id !== bucketId) },
@@ -1493,7 +1508,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const bucket = prev.buckets[kid].find((b) => b.id === bucketId);
       if (!bucket || !bucket.claimPending) return prev;
-      const tx = { id: uid(), kid, type: 'claim_rejected', amount: 0, reason: bucket.name, bucketName: bucket.name, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'claim_rejected', amount: 0, reason: bucket.name, bucketName: bucket.name, requestedAt: bucket.claimRequestedAt, ts: Date.now() };
       return {
         ...prev,
         buckets: {
@@ -1515,13 +1530,13 @@ function ParentPanel({ data, setData, onOpenTest }) {
       const currentCredit = prev.balances[req.kid];
       const fromCredit = Math.min(req.cost, currentCredit);
       const newDebit = req.cost - fromCredit;
-      const tx = { id: uid(), kid: req.kid, type: 'debt_approved', amount: newDebit, reason: req.rewardName, ts: Date.now() };
+      const tx = { id: uid(), kid: req.kid, type: 'debt_approved', amount: newDebit, reason: req.rewardName, requestedAt: req.ts, ts: Date.now() };
       return {
         ...prev,
         balances: { ...prev.balances, [req.kid]: currentCredit - fromCredit },
         debits: { ...prev.debits, [req.kid]: prev.debits[req.kid] + newDebit },
         debtRequests: prev.debtRequests.map((r) => (r.id === requestId ? { ...r, status: 'approved' } : r)),
-        transactions: [tx, ...prev.transactions],
+        transactions: [tx, ...dropRequestTx(prev.transactions, requestId)],
       };
     });
     flashToast('Advance approved');
@@ -1531,11 +1546,11 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const req = prev.debtRequests.find((r) => r.id === requestId);
       if (!req || req.status !== 'pending') return prev;
-      const tx = { id: uid(), kid: req.kid, type: 'debt_rejected', amount: 0, reason: req.rewardName, ts: Date.now() };
+      const tx = { id: uid(), kid: req.kid, type: 'debt_rejected', amount: 0, reason: req.rewardName, requestedAt: req.ts, ts: Date.now() };
       return {
         ...prev,
         debtRequests: prev.debtRequests.map((r) => (r.id === requestId ? { ...r, status: 'rejected' } : r)),
-        transactions: [tx, ...prev.transactions],
+        transactions: [tx, ...dropRequestTx(prev.transactions, requestId)],
       };
     });
     flashToast('Advance declined');
@@ -1550,7 +1565,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const req = prev.taskRequests.find((r) => r.id === requestId);
       if (!req || req.status !== 'rejected') return prev;
-      const tx = { id: uid(), kid: req.kid, type: 'task_request', amount: 0, reason: `${req.taskName} (restored)`, ts: Date.now() };
+      const tx = { id: uid(), kid: req.kid, type: 'task_request', amount: 0, reason: `${req.taskName} (restored)`, reqId: req.id, ts: Date.now() };
       return {
         ...prev,
         taskRequests: prev.taskRequests.map((r) => (r.id === requestId ? { ...r, status: 'pending' } : r)),
@@ -1564,7 +1579,7 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const req = prev.debtRequests.find((r) => r.id === requestId);
       if (!req || req.status !== 'rejected') return prev;
-      const tx = { id: uid(), kid: req.kid, type: 'debt_request', amount: 0, reason: `${req.rewardName} (restored)`, ts: Date.now() };
+      const tx = { id: uid(), kid: req.kid, type: 'debt_request', amount: 0, reason: `${req.rewardName} (restored)`, reqId: req.id, ts: Date.now() };
       return {
         ...prev,
         debtRequests: prev.debtRequests.map((r) => (r.id === requestId ? { ...r, status: 'pending' } : r)),
@@ -1579,12 +1594,12 @@ function ParentPanel({ data, setData, onOpenTest }) {
       const req = prev.taskRequests.find((r) => r.id === requestId);
       if (!req || req.status !== 'pending') return prev;
       const finalCoins = getReqCoins(req);
-      const tx = { id: uid(), kid: req.kid, type: 'task_approved', amount: finalCoins, reason: req.taskName, ts: Date.now() };
+      const tx = { id: uid(), kid: req.kid, type: 'task_approved', amount: finalCoins, reason: req.taskName, requestedAt: req.ts, ts: Date.now() };
       return {
         ...prev,
         balances: { ...prev.balances, [req.kid]: prev.balances[req.kid] + finalCoins },
         taskRequests: prev.taskRequests.map((r) => (r.id === requestId ? { ...r, status: 'approved', coins: finalCoins } : r)),
-        transactions: [tx, ...prev.transactions],
+        transactions: [tx, ...dropRequestTx(prev.transactions, requestId)],
       };
     });
     flashToast('Approved — coins added');
@@ -1594,11 +1609,11 @@ function ParentPanel({ data, setData, onOpenTest }) {
     setData((prev) => {
       const req = prev.taskRequests.find((r) => r.id === requestId);
       if (!req || req.status !== 'pending') return prev;
-      const tx = { id: uid(), kid: req.kid, type: 'task_rejected', amount: 0, reason: req.taskName, ts: Date.now() };
+      const tx = { id: uid(), kid: req.kid, type: 'task_rejected', amount: 0, reason: req.taskName, requestedAt: req.ts, ts: Date.now() };
       return {
         ...prev,
         taskRequests: prev.taskRequests.map((r) => (r.id === requestId ? { ...r, status: 'rejected' } : r)),
-        transactions: [tx, ...prev.transactions],
+        transactions: [tx, ...dropRequestTx(prev.transactions, requestId)],
       };
     });
     flashToast('Request declined');
@@ -2454,9 +2469,16 @@ function ParentPanel({ data, setData, onOpenTest }) {
                     {t.kid}
                   </span>
                   <Icon size={19} style={{ color, flexShrink: 0 }} />
-                  <span className="text-xl truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
-                    {label}
-                  </span>
+                  <div className="min-w-0">
+                    <span className="text-xl block truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                      {label}
+                    </span>
+                    {t.requestedAt && (
+                      <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                        asked {fmtDate(t.requestedAt)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col items-end flex-shrink-0 pl-2">
                   {amountLabel && (
@@ -2690,7 +2712,7 @@ function CoinBank() {
       const alreadyPending = prev.taskRequests.some((r) => r.kid === kid && r.taskId === taskId && r.status === 'pending');
       if (alreadyPending) return prev;
       const request = { id: uid(), kid, taskId, taskName: task.name, coins: task.coins, status: 'pending', ts: Date.now() };
-      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: task.name, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: task.name, reqId: request.id, ts: Date.now() };
       return {
         ...prev,
         taskRequests: [request, ...prev.taskRequests],
@@ -2702,7 +2724,7 @@ function CoinBank() {
   const requestCustomTask = useCallback((kid, name, coins) => {
     setData((prev) => {
       const request = { id: uid(), kid, taskId: null, taskName: name, coins, status: 'pending', custom: true, ts: Date.now() };
-      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: `${name} (suggested)`, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: `${name} (suggested)`, reqId: request.id, ts: Date.now() };
       return {
         ...prev,
         taskRequests: [request, ...prev.taskRequests],
@@ -2716,7 +2738,7 @@ function CoinBank() {
       const alreadyPending = prev.debtRequests.some((r) => r.kid === kid && r.rewardName === rewardName && r.status === 'pending');
       if (alreadyPending) return prev;
       const request = { id: uid(), kid, rewardName, cost, status: 'pending', ts: Date.now() };
-      const tx = { id: uid(), kid, type: 'debt_request', amount: 0, reason: `${rewardName} (${cost})`, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'debt_request', amount: 0, reason: `${rewardName} (${cost})`, reqId: request.id, ts: Date.now() };
       return {
         ...prev,
         debtRequests: [request, ...prev.debtRequests],
@@ -2790,7 +2812,7 @@ function CoinBank() {
         custom: !item.taskId,
         ts: Date.now(),
       };
-      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: item.name, ts: Date.now() };
+      const tx = { id: uid(), kid, type: 'task_request', amount: 0, reason: item.name, reqId: requestId, ts: Date.now() };
       return {
         ...prev,
         taskRequests: [request, ...prev.taskRequests],
