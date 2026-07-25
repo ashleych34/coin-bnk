@@ -207,6 +207,37 @@ function fmtDate(ts) {
     d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+// "Today" / "Yesterday" / "Mon, Jul 22" — used for ledger day headers.
+function dayLabel(ts) {
+  const d = new Date(ts);
+  const key = (x) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`;
+  const now = new Date();
+  const yest = new Date(now.getTime() - 86400000);
+  if (key(d) === key(now)) return 'Today';
+  if (key(d) === key(yest)) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// Group a newest-first transaction list into [{ label, key, items }] by day.
+function groupByDay(list) {
+  const groups = [];
+  let current = null;
+  list.forEach((t) => {
+    const d = new Date(t.ts);
+    const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (!current || current.key !== k) {
+      current = { key: k, label: dayLabel(t.ts), items: [] };
+      groups.push(current);
+    }
+    current.items.push(t);
+  });
+  return groups;
+}
+
 // When a request is approved/declined, its standalone "Requested:" ledger
 // entry becomes redundant — the resolution entry carries both the request
 // time and the decision time. Drop it so the ledger doesn't show confusing
@@ -2452,51 +2483,63 @@ function ParentPanel({ data, setData, onOpenTest }) {
           No transactions yet.
         </div>
       ) : (
-        <ul className="space-y-2 pb-4">
-          {data.transactions.map((t) => {
-            const { label, amountLabel, color, Icon } = describeTx(t);
-            return (
-              <li
-                key={t.id}
-                className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
-                    style={{ background: ACCENTS[t.kid].bg, color: ACCENTS[t.kid].c }}
-                  >
-                    {t.kid}
-                  </span>
-                  <Icon size={19} style={{ color, flexShrink: 0 }} />
-                  <div className="min-w-0">
-                    <span className="text-xl block truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
-                      {label}
-                    </span>
-                    {t.requestedAt && (
-                      <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
-                        asked {fmtDate(t.requestedAt)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end flex-shrink-0 pl-2">
-                  {amountLabel && (
-                    <span
-                      className="text-xl font-semibold tabular-nums"
-                      style={{ color, fontFamily: "'JetBrains Mono', monospace" }}
+        <div className="pb-4">
+          {groupByDay(data.transactions).map((group) => (
+            <div key={group.key} className="mb-4">
+              <div className="px-1 mb-2 flex items-center gap-2">
+                <span className="text-base uppercase tracking-[0.15em]" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                  {group.label}
+                </span>
+                <span className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+              </div>
+              <ul className="space-y-2">
+                {group.items.map((t) => {
+                  const { label, amountLabel, color, Icon } = describeTx(t);
+                  return (
+                    <li
+                      key={t.id}
+                      className="flex items-center justify-between rounded-lg px-3 py-2.5"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     >
-                      {amountLabel}
-                    </span>
-                  )}
-                  <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
-                    {fmtDate(t.ts)}
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="text-base uppercase font-semibold px-2 py-0.5 rounded flex-shrink-0"
+                          style={{ background: ACCENTS[t.kid].bg, color: ACCENTS[t.kid].c }}
+                        >
+                          {t.kid}
+                        </span>
+                        <Icon size={19} style={{ color, flexShrink: 0 }} />
+                        <div className="min-w-0">
+                          <span className="text-xl block truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                            {label}
+                          </span>
+                          {t.requestedAt && (
+                            <span className="text-base block" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                              asked {fmtDate(t.requestedAt)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end flex-shrink-0 pl-2">
+                        {amountLabel && (
+                          <span
+                            className="text-xl font-semibold tabular-nums"
+                            style={{ color, fontFamily: "'JetBrains Mono', monospace" }}
+                          >
+                            {amountLabel}
+                          </span>
+                        )}
+                        <span className="text-base" style={{ color: 'var(--text-dim)', fontFamily: 'Inter, sans-serif' }}>
+                          {fmtTime(t.ts)}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
