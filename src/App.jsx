@@ -685,7 +685,13 @@ function TodayPlan({ kid, plan, taskCatalog, taskRequests, onAdd, onToggle, onRe
   const today = todayStr();
   const items = (plan || []).filter((it) => it.date === today);
   const myCatalog = taskCatalog.filter((t) => !t.kids || t.kids.length === 0 || t.kids.includes(kid));
-  const plannedTaskIds = new Set(items.filter((it) => it.taskId).map((it) => it.taskId));
+  // Hide a catalog chip only while there's still an OPEN item for that task
+  // (not done, not yet requested). Once it's checked off or sent for
+  // approval, the chip comes back so the same task can be logged again —
+  // e.g. backdating yesterday's session, then adding today's.
+  const plannedTaskIds = new Set(
+    items.filter((it) => it.taskId && !it.done && !it.requestId).map((it) => it.taskId)
+  );
 
   const requestStatus = (item) => {
     if (!item.requestId) return null;
